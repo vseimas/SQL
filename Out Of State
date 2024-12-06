@@ -72,4 +72,7 @@ GROUP BY term
 	FROM percentage_total
 	ORDER BY term
 
+select *
+FROM #temp1
+
 drop table #temp1
