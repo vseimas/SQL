@@ -13,7 +13,7 @@ group by season, year)
 
 select term, format((cast(int_count AS decimal)/ NULLIF(cast(headcount as decimal),0)) *100, '0.#') AS perc
 FROM INTRT WITH (NOLOCK)
-WHERE term like '%2023'
+WHERE term like '%20XX'
 ;
  
  
@@ -32,7 +32,7 @@ group by season, year, discipline
 
 select term, discipline, format((cast(int_count AS decimal)/ NULLIF(cast(headcount as decimal),0)) *100, '0.#') AS perc
 FROM INTRD WITH (NOLOCK)
-WHERE term like '%2023'
+WHERE term like '%20XX'
 ORDER BY
 case DISCIPLINE 
 			when 'COP - Humanities' then 1 
