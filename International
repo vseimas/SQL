@@ -1,0 +1,53 @@
+--FTFY international total 
+with INTRT AS(
+select  season+' '+year term, count(id)headcount,
+Sum(case ethnic_desc
+	when 'international' then 1
+	else 0
+	END) AS int_count
+from enr WITH (NOLOCK)
+where report = '1'
+and season = 'fall'
+and styp_code = 'n'
+group by season, year)
+
+select term, format((cast(int_count AS decimal)/ NULLIF(cast(headcount as decimal),0)) *100, '0.#') AS perc
+FROM INTRT WITH (NOLOCK)
+WHERE term like '%2023'
+;
+ 
+ 
+--FTFY international by discipline
+with INTRD AS (
+select season+' '+year term, discipline, count(id)headcount, Sum(case ethnic_desc
+	when 'international' then 1
+	else 0
+	END) AS int_count
+from enr WITH (NOLOCK)
+where report = '1'
+and season = 'fall'
+and styp_code = 'n'
+group by season, year, discipline 
+)
+
+select term, discipline, format((cast(int_count AS decimal)/ NULLIF(cast(headcount as decimal),0)) *100, '0.#') AS perc
+FROM INTRD WITH (NOLOCK)
+WHERE term like '%2023'
+ORDER BY
+case DISCIPLINE 
+			when 'COP - Humanities' then 1 
+			when 'COP - Natural Sciences' then 2 
+			when 'COP - Social Sciences' then 3
+			when 'COP - Exploratory'then 4
+			when 'ESB' then 5
+			when 'BC' then 6
+			when 'SOECS' then 7
+			when 'COM'then 8
+			when 'SHS' then 9
+			when 'SOP'then 10
+			when 'DEN' then 11
+			when 'LAW'then 12
+			when 'UW'then 13
+			when 'UNC' then 14
+	END;
+ 
