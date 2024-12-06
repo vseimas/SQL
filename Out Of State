@@ -1,7 +1,7 @@
 -----Divide out_of_state with excluding_international
 select distinct id, season+' '+year term, season, year, region, cnty_desc1, ethnic_desc, discipline
 into #temp1
-from ENR
+from ENR WITH (NOLOCK)
 where report = '1'
 and season = 'fall' and year >= '2013'
 and levl_code = 'ug' and styp_code = 'n'
@@ -29,14 +29,14 @@ go
 
 with percentage_by_discipline AS(
 select term, DISCIPLINE, sum(out_of_state) OutOFState, count(distinct id) COhort
-from #temp1
+from #temp1 WITH (NOLOCK)
 WHERE season = 'fall' and year >= '2013'
 and region not in ('International')
 GROUP BY term, DISCIPLINE 
 	)
 
 	select term, DISCIPLINE, OutOFState, COhort, format((cast(OutOFState AS decimal)/ NULLIF(cast(COhort as decimal),0)) *100, '0.#') AS perc
-	FROM percentage_by_discipline 
+	FROM percentage_by_discipline WITH (NOLOCK)
 	WHERE term like '%20XX'
 	GROUP BY term, DISCIPLINE, OutOFState, COhort
 	ORDER BY 
@@ -62,14 +62,14 @@ GROUP BY term, DISCIPLINE
 
 with percentage_total AS(
 select term, sum(out_of_state) OutOFState, count(distinct id) COhort
-from #temp1
+from #temp1 WITH (NOLOCK)
 WHERE season = 'fall' and year >= '20XX'
 and region not in ('International')
 GROUP BY term
 	)
 
 	select term, format((cast(OutOFState AS decimal)/ NULLIF(cast(COhort as decimal),0)) *100, '0.#') AS perc
-	FROM percentage_total
+	FROM percentage_total WITH (NOLOCK)
 	ORDER BY term
 
 select *
