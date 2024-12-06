@@ -28,17 +28,17 @@ go
 -- Show out of state, cohort, and the percentage needed by dicipline
 
 with percentage_by_discipline AS(
-select term, DISCIPLINE, sum(out_of_state) OutOFState, count(distinct id) COhort
+select term, DISCIPLINE, sum(out_of_state) OutOfState, count(distinct id) Cohort
 from #temp1 WITH (NOLOCK)
 WHERE season = 'fall' and year >= '2013'
 and region not in ('International')
 GROUP BY term, DISCIPLINE 
 	)
 
-	select term, DISCIPLINE, OutOFState, COhort, format((cast(OutOFState AS decimal)/ NULLIF(cast(COhort as decimal),0)) *100, '0.#') AS perc
+	select term, DISCIPLINE, OutOfState, Cohort, format((cast(OutOfState AS decimal)/ NULLIF(cast(Cohort as decimal),0)) *100, '0.#') AS perc
 	FROM percentage_by_discipline WITH (NOLOCK)
 	WHERE term like '%20XX'
-	GROUP BY term, DISCIPLINE, OutOFState, COhort
+	GROUP BY term, DISCIPLINE, OutOfState, Cohort
 	ORDER BY 
 		case DISCIPLINE 
 			when 'COP - Humanities' then 1 
@@ -61,14 +61,14 @@ GROUP BY term, DISCIPLINE
 -- Show out of state, cohort, and the percentage needed for whole year
 
 with percentage_total AS(
-select term, sum(out_of_state) OutOFState, count(distinct id) COhort
+select term, sum(out_of_state) OutOfState, count(distinct id) Cohort
 from #temp1 WITH (NOLOCK)
 WHERE season = 'fall' and year >= '20XX'
 and region not in ('International')
 GROUP BY term
 	)
 
-	select term, format((cast(OutOFState AS decimal)/ NULLIF(cast(COhort as decimal),0)) *100, '0.#') AS perc
+	select term, format((cast(OutOfState AS decimal)/ NULLIF(cast(Cohort as decimal),0)) *100, '0.#') AS perc
 	FROM percentage_total WITH (NOLOCK)
 	ORDER BY term
 
