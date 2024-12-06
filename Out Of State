@@ -1,0 +1,75 @@
+-----Divide out_of_state with excluding_international
+select distinct id, season+' '+year term, season, year, region, cnty_desc1, ethnic_desc, discipline
+into #temp1
+from ENR
+where report = '1'
+and season = 'fall' and year >= '2013'
+and levl_code = 'ug' and styp_code = 'n'
+
+
+--update Fall 2022 region and ethnic_desc, there are 4 students with ethnic_desc = 'Asian' and region = 'International'
+update #temp1 set region = 'Local Market' where ethnic_desc = 'Asian' and region = 'International' and cnty_desc1 = 'San Joaquin' and year = '2022'
+update #temp1 set region = 'Northern CA' where ethnic_desc = 'Asian' and region = 'International' and cnty_desc1 = 'Santa Clara' and year = '2022'
+update #temp1 set region = 'NULL' where ethnic_desc = 'Asian' and region = 'International' and cnty_desc1 is null and year = '2022'
+
+alter table #temp1 add
+	out_of_state int,
+	excluding_international varchar (1)
+go
+
+update #temp1 set out_of_state = 0
+update #temp1 set out_of_state = 1 where region not in ('Local Market', 'Northern CA', 'Southern CA', 'International', 'Missing') and region is not null
+go
+
+update #temp1 set excluding_international = 0
+update #temp1 set excluding_international = 1 where region not in ('International')
+go
+
+-- Show out of state, cohort, and the percentage needed by dicipline
+
+with percentage_by_discipline AS(
+select term, DISCIPLINE, sum(out_of_state) OutOFState, count(distinct id) COhort
+from #temp1
+WHERE season = 'fall' and year >= '2013'
+and region not in ('International')
+GROUP BY term, DISCIPLINE 
+	)
+
+	select term, DISCIPLINE, OutOFState, COhort, format((cast(OutOFState AS decimal)/ NULLIF(cast(COhort as decimal),0)) *100, '0.#') AS perc
+	FROM percentage_by_discipline 
+	WHERE term like '%20XX'
+	GROUP BY term, DISCIPLINE, OutOFState, COhort
+	ORDER BY 
+		case DISCIPLINE 
+			when 'COP - Humanities' then 1 
+			when 'COP - Natural Sciences' then 2 
+			when 'COP - Social Sciences' then 3
+			when 'COP - Exploratory'then 4
+			when 'ESB' then 5
+			when 'BC' then 6
+			when 'SOECS' then 7
+			when 'COM'then 8
+			when 'SHS' then 9
+			when 'SOP'then 10
+			when 'DEN' then 11
+			when 'LAW'then 12
+			when 'UW'then 13
+			when 'UNC' then 14
+	END;
+
+
+-- Show out of state, cohort, and the percentage needed for whole year
+
+with percentage_total AS(
+select term, sum(out_of_state) OutOFState, count(distinct id) COhort
+from #temp1
+WHERE season = 'fall' and year >= '20XX'
+and region not in ('International')
+GROUP BY term
+	)
+
+	select term, format((cast(OutOFState AS decimal)/ NULLIF(cast(COhort as decimal),0)) *100, '0.#') AS perc
+	FROM percentage_total
+	ORDER BY term
+
+drop table #temp1
