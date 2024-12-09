@@ -1,0 +1,81 @@
+--C. First-Year Students
+
+-- Apps and Admittance
+select count(case 
+	when apst_code in ('C', 'D') then id END) AS FYapplied, -- for completed apps only – use completed apps to calculate selectivity rate beginning in fall 2022
+	count(case 
+	when apdc_code1 in ('A1','AC','AI','CC','C2','CO','FL','NC','TF','NP') then id END) AS FYadmitted
+from adm WITH (NOLOCK)
+where year = '20XX' and season = 'fall'
+and styp_code = 'n'
+
+group by term_code_key
+
+
+--Enrolled
+select count(id)FYenrolled
+from enr WITH (NOLOCK)
+where year = '20XX' and season = 'fall'
+and report = '1'
+and styp_code = 'n'
+and level = 'ug'
+group by term_code_key;
+
+----Percent of first-year matriculants from outside state, including international (%)
+--out of state
+/*select count(id) AS out_of_state
+from enr WITH (NOLOCK)
+where year = '2024' and season = 'fall'
+and report = '1'
+and styp_code = 'n'
+and level = 'ug'
+and region in ('Western US','Eastern US','International','Missing');
+
+
+--divided by
+select count(id)total	
+from enr WITH (NOLOCK)
+where year = '202X' and season = 'fall'
+and report = '1'
+and styp_code = 'n'
+and level = 'ug'
+
+*/
+
+--Out of State %
+with OOS AS (
+select count(
+	case 
+	when region in ('Western US','Eastern US','International','Missing') then id end) AS out_of_state_total,
+	count(id) AS totalstudents
+from enr WITH (NOLOCK)
+where year = '20XX' and season = 'fall'
+and report = '1'
+and styp_code = 'n'
+and level = 'ug'
+)
+
+SELECT format((cast(out_of_state_total AS decimal)/ NULLIF(cast(totalstudents as decimal),0)) *100, '0') AS OutofStatePerc
+FROM OOS WITH (NOLOCK)
+
+----D. Transfer Students
+--Apps and Admittance
+select 
+count(case 
+	when apst_code in ('C', 'D') then id END) AS TRapplied, -- for completed apps only – use completed apps to calculate selectivity rate beginning in fall 2022
+	count(case 
+	when apdc_code1 in ('A1','AC','AI','CC','C2','CO','FL','NC','TF','NP') then id END) AS TRadmitted
+from adm WITH (NOLOCK)
+where year = '20XX' and season = 'fall'
+and styp_code = 't'
+and levl_code = 'ug'
+group by term_code_key
+
+
+--Enrolled
+select count(id)TRenrolled
+from enr WITH (NOLOCK)
+where year = '20XX' and season = 'fall'
+and report = '1'
+and styp_code = 't'
+and level ='ug'
