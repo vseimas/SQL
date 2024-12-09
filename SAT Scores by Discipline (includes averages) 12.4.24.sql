@@ -1,4 +1,4 @@
-----Years are listed as'%20xx' - update the XXs to get the correct year data
+----Years are listed as'20XX81' - update the XXs to get the correct year data
 
 -- Creating the temp table
 select 
@@ -26,7 +26,7 @@ GROUP BY TERM_CODE_KEY, DISCIPLINE
 
 select DISCIPLINE, cast(SCS AS INT) Avg_SAT, Students
 from AVGS
-WHERE TERM_CODE_KEY = '202X81'
+WHERE TERM_CODE_KEY = '20XX81'
 GROUP BY DISCIPLINE, SCS, Students
 ORDER BY 
 case DISCIPLINE 
@@ -58,7 +58,7 @@ GROUP BY TERM_CODE_KEY
 
 select TERM_CODE_KEY,cast(SCS AS INT) As Avg_SAT
 from AVG
-WHERE TERM_CODE_KEY = '202X81'
+WHERE TERM_CODE_KEY = '20XX81'
 GROUP BY TERM_CODE_KEY, SCS
 ;
 
