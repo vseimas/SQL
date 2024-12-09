@@ -58,6 +58,7 @@ select TERM_CODE_KEY,cast(SCS AS INT)
 from AVG
 WHERE TERM_CODE_KEY = '202X81'
 GROUP BY TERM_CODE_KEY, SCS
+;
 
 select *
 from #temp
