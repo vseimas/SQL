@@ -1,3 +1,5 @@
+----Years are listed as'%20xx' - update the XXs to get the correct year data
+
 -- Creating the temp table
 select 
 a.pidm_key, a.term_code_key, a.COLL_CODE, a.DISCIPLINE, a.majr_desc1, a.uopi_status, b.IRSV, b.IRSM, cast(b.IRSM as decimal)+cast(b.IRSV as decimal) SATT
