@@ -22,7 +22,7 @@ from #temp
 GROUP BY TERM_CODE_KEY, DISCIPLINE
 )
 
-select DISCIPLINE, cast(SCS AS INT), Students
+select DISCIPLINE, cast(SCS AS INT) Avg_SAT, Students
 from AVGS
 WHERE TERM_CODE_KEY = '202X81'
 GROUP BY DISCIPLINE, SCS, Students
@@ -54,13 +54,13 @@ from #temp
 GROUP BY TERM_CODE_KEY 
 )
 
-select TERM_CODE_KEY,cast(SCS AS INT)
+select TERM_CODE_KEY,cast(SCS AS INT) As Avg_SAT
 from AVG
 WHERE TERM_CODE_KEY = '202X81'
 GROUP BY TERM_CODE_KEY, SCS
 ;
 
-select *
-from #temp
+--select *
+--from #temp
 
 drop table #temp
