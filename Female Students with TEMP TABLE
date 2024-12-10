@@ -1,0 +1,110 @@
+
+select id, pidm_key, Year, Season, term_code_key, term_desc, styp_code, styp_desc, gender, ethn_code, ethnic_code, ethnic_desc, age, ft_pt, majr_desc1, degc_code, level, discipline, uopi_status, UOPI_Concentration, region, season+' '+year term
+into #temp8
+from ENR WITH (NOLOCK)
+where report = '1'
+and season = 'fall' and year >= '2013'
+order by term_code_key
+
+----As of 10.24.23, we are no longer reporting gender = 'F' with gender is null or gender = 'N'
+----Will now report gender is null or gender = 'N' as "Gender Not Reported/Unknown"		
+----OLD METHOD: Fix missing genders using IPEDS rules: nulls/unknowns go to the largest category 
+
+update #temp8 set gender = 'N' where gender is null or gender = 'N'
+go
+
+-- Creating Gender columns to count off of
+SELECT COUNT(id)AS chrt, term_desc, styp_code, styp_desc, gender, ethnic_desc, ft_pt, majr_desc1, degc_code, level, discipline, 
+       uopi_status, UOPI_Concentration, region, season + ' ' + year AS term, 
+	   Case gender when 'F'  then count(ID) else 0 END AS FEM
+	--  , Case gender when 'n' then count(ID) else 0 END AS UNK,
+	--Case gender when 'm' then count(ID) else 0 END AS MLE,
+	--Case gender when ' ' then count(ID) else 0 END AS BLNK,
+	--Case gender when NULL then count(ID) else 0 END AS NU
+into #temp5
+FROM #temp8 WITH (NOLOCK)
+GROUP BY term_desc, styp_code, styp_desc, gender, ethnic_desc, ft_pt, majr_desc1, degc_code, level, discipline, uopi_status, 
+         UOPI_Concentration, region, season + ' ' + year, ID;
+
+
+-- Calculating Female and Cohort totals by discipline
+SEleCT term, discipline, sum(FEM) as FEM, sum(chrt) as Cohort
+FROM #temp5
+WHERE  STYP_CODE = 'n'
+and term like '%2024'
+GROUP BY term, discipline
+ORDER BY
+case DISCIPLINE 
+			when 'COP - Humanities' then 1 
+			when 'COP - Natural Sciences' then 2 
+			when 'COP - Social Sciences' then 3
+			when 'COP - Exploratory'then 4
+			when 'ESB' then 5
+			when 'BC' then 6
+			when 'SOECS' then 7
+			when 'COM'then 8
+			when 'SHS' then 9
+			when 'SOP'then 10
+			when 'DEN' then 11
+			when 'LAW'then 12
+			when 'UW'then 13
+			when 'UNC' then 14
+			END;
+
+-- Calculating the percentage by discipline
+WITH FEMD AS (
+SELECT term, DISCIPLINE, 
+	cast(sum(FEM) as decimal) AS FEM,
+	--cast(sum(UNK) as decimal) as UNK,
+	--cast(sum(MLE) as decimal) as MLE,
+	--cast(sum(BLNK) as decimal) as BLNK,
+	--cast(SUM(NU) as decimal) as NU,
+	sum(chrt) AS Cohort
+FROM #temp5 WITH (NOLOCK)
+WHERE STYP_CODE = 'n'
+and term like '%2024'
+GROUP BY term, DISCIPLINE
+
+
+
+)
+SELECT term, discipline, format((cast(FEM AS decimal)/ NULLIF(cast(Cohort as decimal),0)) *100, '0.#') AS perc
+FROM FEMD WITH (NOLOCK)
+ORDER BY
+case DISCIPLINE 
+			when 'COP - Humanities' then 1 
+			when 'COP - Natural Sciences' then 2 
+			when 'COP - Social Sciences' then 3
+			when 'COP - Exploratory'then 4
+			when 'ESB' then 5
+			when 'BC' then 6
+			when 'SOECS' then 7
+			when 'COM'then 8
+			when 'SHS' then 9
+			when 'SOP'then 10
+			when 'DEN' then 11
+			when 'LAW'then 12
+			when 'UW'then 13
+			when 'UNC' then 14
+	END;
+
+-- Calculating the overall percentage
+WITH FEMO AS (
+SELECT term, 
+	cast(sum(FEM) as decimal) AS FEM,
+	sum(chrt) AS Cohort
+FROM #temp5 WITH (NOLOCK)
+WHERE STYP_CODE = 'n'
+and term like '%2024'
+GROUP BY term
+)
+
+SELECT term, format((cast(FEM AS decimal)/ NULLIF(cast(Cohort as decimal),0)) *100, '0.#') AS perc
+FROM FEMO WITH (NOLOCK);
+
+
+
+
+drop table #temp5
+
+drop table #temp8
