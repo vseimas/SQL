@@ -1,0 +1,80 @@
+-- grabbing data and adding a UDM code with a CTE
+with ENDEMO AS(
+select count(id) as chrt, pidm_key, Year, Season, term_code_key, term_desc, styp_code, styp_desc, gender, ethn_code, ethnic_code, 
+ethnic_desc, age, ft_pt, majr_desc1, degc_code, level, discipline, uopi_status, UOPI_Concentration, region, season+' '+year as term,
+case ETHNIC_CODE when 'B' then 1
+when 'N' then 1
+when 'H' then 1
+else 0 END AS URM
+from ENR 
+where report = '1'
+and season = 'fall' and year >= '2013'
+and STYP_CODE = 'n'
+GROUP BY pidm_key, Year, Season, term_code_key, term_desc, styp_code, styp_desc, gender, ethn_code, ethnic_code, 
+ethnic_desc, age, ft_pt, majr_desc1, degc_code, level, discipline, uopi_status, UOPI_Concentration, region, season+' '+year
+)
+,
+--- creating a 2nd CTE to calcualte the  percentage by discipline
+URMP AS (
+SELECT term, DISCIPLINE, sum(URM) as URM2, sum(chrt) as cohort
+FROM ENDEMO
+WHERE TERM like '%2023'
+GROUP BY TERM, discipline
+)
+
+-- calcualting percentages by discipline		 
+SELECT TERM, discipline, 
+	format((cast(URM2 AS decimal)/ NULLIF(cast(Cohort as decimal),0)) *100, '0.#') AS URMperc
+FROM URMP
+GROUP BY term, discipline, URM2, cohort
+ORDER BY 
+case DISCIPLINE 
+			when 'COP - Humanities' then 1 
+			when 'COP - Natural Sciences' then 2 
+			when 'COP - Social Sciences' then 3
+			when 'COP - Exploratory'then 4
+			when 'ESB' then 5
+			when 'BC' then 6
+			when 'SOECS' then 7
+			when 'COM'then 8
+			when 'SHS' then 9
+			when 'SOP'then 10
+			when 'DEN' then 11
+			when 'LAW'then 12
+			when 'UW'then 13
+			when 'UNC' then 14
+			END
+; 
+
+		
+--- repeating the 1st CTE to calcualte the overall percentage 
+with ENDEMO AS (
+select count(id) as chrt, pidm_key, Year, Season, term_code_key, term_desc, styp_code, styp_desc, gender, ethn_code, ethnic_code, 
+ethnic_desc, age, ft_pt, majr_desc1, degc_code, level, discipline, uopi_status, UOPI_Concentration, region, season+' '+year as term,
+case ETHNIC_CODE when 'B' then 1
+when 'N' then 1
+when 'H' then 1
+else 0 END AS URM
+from ENR 
+where report = '1'
+and season = 'fall' and year >= '2013'
+and STYP_CODE = 'n'
+GROUP BY pidm_key, Year, Season, term_code_key, term_desc, styp_code, styp_desc, gender, ethn_code, ethnic_code, 
+ethnic_desc, age, ft_pt, majr_desc1, degc_code, level, discipline, uopi_status, UOPI_Concentration, region, season+' '+year
+)
+, 
+--- creating a 3nd CTE to calcualte the overall percentage
+URMO AS (
+SELECT TERM, cast(sum(URM) as decimal) as URM, sum(chrt) as Cohort
+FROM ENDEMO
+WHERE TERM like '%20XX'
+GROUP BY TERM
+			)
+	
+--- creating the overall percentage
+
+SELECT TERM,
+	format((cast(URM AS decimal)/ NULLIF(cast(Cohort as decimal),0)) *100, '0.#') AS URMperc
+FROM URMO
+GROUP BY TERM, URM, Cohort
+
