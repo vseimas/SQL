@@ -1,0 +1,57 @@
+-- Years showing as '20XX%' - update with correct years to run- 2 instances, 1 for each query
+
+-- Selectivity - First-Year Students admitted/applicants  % overall
+WITH SLCTVY AS(
+select term_code_key, count(case 
+	when apst_code in ('C', 'D') then id END) AS FYapplied, -- for completed apps only – use completed apps to calculate selectivity rate beginning in fall 2024
+	count(case 
+	when apdc_code1 in ('A1','AC','AI','CC','C2','CO','FL','NC','TF','NP') then id END) AS FYadmitted
+from adm WITH (NOLOCK)
+where season = 'fall'
+and styp_code = 'n'
+
+group by term_code_key)
+
+SELECT 
+format((cast(FYadmitted AS decimal)/ NULLIF(cast(FYapplied as decimal),0)) *100, '0.0') AS SelectivityPerc
+FROM SLCTVY WITH (NOLOCK)
+where TERM_CODE_KEY like '2024%'
+;
+
+-- Selectivity -  First-Year Students admitted/applicants % by discipline
+WITH SLCTVYDISC AS(
+select term_code_key, discipline, 
+	count(case 
+	when apdc_code1 in ('A1','AC','AI','CC','C2','CO','FL','NC','TF','NP') then id END) AS FYadmitted,
+	count(case 
+	when apst_code in ('C', 'D') then id END) AS FYapplied -- for completed apps only – use completed apps to calculate selectivity rate beginning in fall 2024
+
+from adm WITH (NOLOCK)
+where season = 'fall'
+and styp_code = 'n'
+
+group by term_code_key, DISCIPLINE)
+
+SELECT discipline,
+format((cast(FYadmitted AS decimal)/ NULLIF(cast(FYapplied as decimal),0)) *100, '0.0') AS SelectivityPerc
+FROM SLCTVYDISC WITH (NOLOCK)
+where TERM_CODE_KEY like '2024%'
+group by DISCIPLINE, FYadmitted, FYapplied
+ORDER BY 
+case DISCIPLINE 
+	when 'COP - Humanities' then 1 
+	when 'COP - Natural Sciences' then 2 
+	when 'COP - Social Sciences' then 3
+	when 'COP - Exploratory'then 4
+	when 'ESB' then 5
+	when 'BC' then 6
+	when 'SOECS' then 7
+	when 'COM'then 8
+	when 'SHS' then 9
+	when 'SOP'then 10
+	when 'DEN' then 11
+	when 'LAW'then 12
+	when 'UW'then 13
+	when 'UNC' then 14
+	END
+	;
