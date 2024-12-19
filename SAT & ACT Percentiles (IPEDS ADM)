@@ -1,0 +1,113 @@
+
+-- Creating the temp table
+select 
+a.pidm_key, a.term_code_key, a.COLL_CODE, a.DISCIPLINE, a.majr_desc1, a.uopi_status, cast(b.IRSV as INT) as RW_SAT, cast(b.IRSM as INT) as Math_SAT, cast(b.IRSM as decimal)+cast(b.IRSV as decimal) SATT, b.TEST_SCORE6 act_composite
+into #temp
+from ENR a WITH (NOLOCK) 
+left join ADM b on a.pidm_key = b.pidm_key and a.term_code_key = b.term_code_key
+where report = '1'
+and a.styp_code = 'n'
+and (a.term_code_key >= '201381')
+and a.term_desc like ('%fall%')
+and (a.UOPI_status in ('not UOPI','integrated accelerator') or a.UOPI_Status is null)
+
+-- add the ACT scores from seperate table
+alter table #temp add act_eng int
+go
+
+update #temp
+set act_eng = sortest_test_score
+from SORTEST a WITH (NOLOCK) 
+where sortest_tesc_code = 'a01'
+and #temp.pidm_key=a.sortest_pidm
+and sortest_test_score = (select max(i.sortest_test_score)
+                           from SORTEST i WITH (NOLOCK) 
+                              where i.sortest_tesc_code = 'a01'
+                              and i.sortest_pidm=a.sortest_pidm)
+
+alter table #temp add act_math int
+go
+
+update #temp
+set act_math = sortest_test_score
+from SORTEST a WITH (NOLOCK) 
+where sortest_tesc_code = 'a02'
+and #temp.pidm_key=a.sortest_pidm
+and sortest_test_score = (select max(i.sortest_test_score)
+                           from SORTEST i WITH (NOLOCK) 
+                              where i.sortest_tesc_code = 'a02'
+                              and i.sortest_pidm=a.sortest_pidm)
+
+--Account for students who only have one part of the SAT score (ex. has a SAT math score but no SAT eng score)
+update #temp set RW_SAT = null where Math_SAT is null
+update #temp set Math_SAT = null where RW_SAT is null
+
+--Account for students who only have one part of the ACT score
+update #temp set act_eng = null where act_math is null
+update #temp set act_math = null where act_eng is null
+update #temp set act_composite = null where (act_math is null or act_eng is null);
+
+-- calculating the cohort
+WITH CHRT AS (
+select term_code_key, count(pidm_key) as Cohort
+from #temp WITH (NOLOCK) 
+where TERM_CODE_KEY = '202481'
+group by TERM_CODE_KEY
+)
+,
+
+-- calculating percentiles off all students with SAT values
+PERCS AS (
+select TERM_CODE_KEY,
+round(PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY RW_SAT) OVER (PARTITION BY TERM_CODE_KEY),0) AS PERC25_RW,
+round(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY RW_SAT) OVER (PARTITION BY TERM_CODE_KEY),0) AS PERC50_RW,
+round(PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY RW_SAT) OVER (PARTITION BY TERM_CODE_KEY),0)  AS PERC75_RW,
+round(PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY Math_SAT) OVER (PARTITION BY TERM_CODE_KEY),0) AS PERC25_Math,
+round(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY Math_SAT) OVER (PARTITION BY TERM_CODE_KEY),0) AS PERC50_Math,
+round(PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY Math_SAT) OVER (PARTITION BY TERM_CODE_KEY),0)  AS PERC75_Math
+from #temp WITH (NOLOCK) 
+where TERM_CODE_KEY = '202481'
+and SATT is not NULL
+
+)
+
+SELECT p.TERM_CODE_KEY, PERC25_RW, PERC50_RW, PERC75_RW, PERC25_Math, PERC50_Math, PERC75_Math, count(*) AS Count, Cohort
+FROM PERCS p WITH (NOLOCK) 
+join CHRT c on p.TERM_CODE_KEY = c.TERM_CODE_KEY
+group by p.TERM_CODE_KEY, PERC25_RW, PERC50_RW, PERC75_RW, PERC25_Math, PERC50_Math, PERC75_Math, Cohort;
+
+-- calculating the cohort
+WITH CHRT AS (
+select term_code_key, count(pidm_key) as Cohort
+from #temp WITH (NOLOCK) 
+where TERM_CODE_KEY = '202481'
+group by TERM_CODE_KEY
+)
+,
+
+-- calculating percentiles off all students with ACT values
+PERCA AS (
+select TERM_CODE_KEY,
+round(PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY act_composite) OVER (PARTITION BY TERM_CODE_KEY),0) AS PERC25_CompACT,
+round(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY act_composite) OVER (PARTITION BY TERM_CODE_KEY),0) AS PERC50_CompACT,
+round(PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY act_composite) OVER (PARTITION BY TERM_CODE_KEY),0)  AS PERC75_CompACT,
+round(PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY act_eng) OVER (PARTITION BY TERM_CODE_KEY),0) AS PERC25_EngACT,
+round(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY act_eng) OVER (PARTITION BY TERM_CODE_KEY),0) AS PERC50_EngACT,
+round(PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY act_eng) OVER (PARTITION BY TERM_CODE_KEY),0)  AS PERC75_EngACT,
+round(PERCENTILE_CONT(0.25) WITHIN GROUP (ORDER BY act_math) OVER (PARTITION BY TERM_CODE_KEY),0) AS PERC25_MathACT,
+round(PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY act_math) OVER (PARTITION BY TERM_CODE_KEY),0) AS PERC50_MathACT,
+round(PERCENTILE_CONT(0.75) WITHIN GROUP (ORDER BY act_math) OVER (PARTITION BY TERM_CODE_KEY),0)  AS PERC75_MathACT
+
+from #temp WITH (NOLOCK) 
+where TERM_CODE_KEY = '202481'
+and act_composite is not NULL
+
+)
+
+SELECT p.TERM_CODE_KEY, PERC25_CompACT, PERC50_CompACT, PERC75_CompACT, PERC25_EngACT, PERC50_EngACT, PERC75_EngACT, PERC25_MathACT, PERC50_MathACT, PERC75_MathACT, count(*) AS Count, Cohort
+FROM PERCA p WITH (NOLOCK) 
+join CHRT c on p.TERM_CODE_KEY = c.TERM_CODE_KEY
+group by p.TERM_CODE_KEY, PERC25_CompACT, PERC50_CompACT, PERC75_CompACT, PERC25_EngACT, PERC50_EngACT, PERC75_EngACT, PERC25_MathACT, PERC50_MathACT, PERC75_MathACT, Cohort;
+
+
+drop table #temp
