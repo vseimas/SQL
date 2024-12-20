@@ -1,0 +1,173 @@
+-- Enrollments organized for PPMB 10 year trend
+WITH CHRT AS (
+select count(id) as id, term_desc, 
+	case
+	when degc_code = 'JD' and styp_code in ('T','P') then 'P'
+	when degc_code in ('JSD','LLM','MSL','NDEG') and styp_code in ('T','P') then 'G'
+	ELSE STYP_CODE
+	END as styp_code,
+
+	case 
+	when degc_code = 'JD' and styp_code in ('T','P') then 'First Term Professional'
+	when degc_code in ('JSD','LLM','MSL','NDEG') and styp_code in ('T','P') then 'First Term Graduate Student'
+	ELSE STYP_DESC
+	END AS styp_desc,
+	
+	case 
+	when gender is NULL then 'N'
+	ELSE gender
+	END AS gender, 
+
+	ethnic_desc,
+
+	case 
+	when ETHNIC_CODE in ('B','N','H') then 'URM'
+	else 'Non-URM' END AS URM,
+	
+	age,
+
+	case 
+	when age <18 then 'Under 18'
+	when age in (18,19,20, 21) then '18 - 21'
+	when age in (22,23,24) then '22 - 24'
+	when age >=25 and age <=39 then '25 - 39'
+	when age >=40 and age< =64 then '40 - 64'
+	when age >=65 then '65 and over'
+	END AS agegroup,
+
+	ft_pt, majr_desc1, degc_code, level,
+
+	case
+	when level in ('GR', 'PR') then 'GR/PR'
+	ELSE level END AS LevelUPD, 
+
+	discipline, uopi_status, UOPI_Concentration, region, season+' '+year AS term
+	
+from ENR WITH (NOLOCK)
+where report = '1'
+and season = 'fall' and year >= '2013'
+group by term_desc, styp_code, styp_desc, gender, ethnic_code, ethnic_desc, age, ft_pt, majr_desc1, degc_code, level, discipline, uopi_status, 
+         UOPI_Concentration, region, season + ' ' + year
+)
+,
+
+PERCS AS (
+select term,
+sum (case when Level = 'UG' and URM = 'URM' then id ELSE 0 END) AS UG_URM,
+sum (case when Level = 'UG' then id ELSE 0 END) AS UG_ENR,
+sum (case when Level = 'GR' and URM = 'URM' then id ELSE 0 END) AS GR_URM,
+sum (case when Level = 'GR' then id ELSE 0 END) AS GR_ENR, 
+sum (case when Level = 'PR' and URM = 'URM' then id ELSE 0 END) AS PR_URM,
+sum (case when Level = 'PR' then id ELSE 0 END) AS PR_ENR, 
+sum (case when LevelUPD = 'GR/PR' and URM = 'URM' then id ELSE 0 END) as GR_PR_URM,
+sum (case when LevelUPD = 'GR/PR' then id ELSE 0 END) as GR_PR_ENR,
+sum (case when  URM = 'URM' then id ELSE 0 END) AS Enr_URM,
+sum (id) as Enr
+FROM CHRT  WITH (NOLOCK)
+WHERE Term like ('%202%')
+group by term
+)
+
+select term,    
+format((NULLIF(cast(UG_URM AS decimal),0)/ NULLIF(cast(UG_ENR as decimal),0)) *100, '0.0') AS UG_URM_Perc,
+format((NULLIF(cast(GR_URM AS decimal),0)/ NULLIF(cast(GR_ENR as decimal),0)) *100, '0.0') AS GR_URM_Perc,
+format((NULLIF(cast(PR_URM AS decimal),0)/ NULLIF(cast(PR_ENR as decimal),0)) *100, '0.0') AS PR_URM_Perc,
+format((NULLIF(cast(GR_PR_URM AS decimal),0)/ NULLIF(cast(GR_PR_ENR as decimal),0)) *100, '0.0') AS GR_PR_URM_Perc,
+format((NULLIF(cast(Enr_URM AS decimal),0)/ NULLIF(cast(Enr as decimal),0)) *100, '0.0') AS Enr_URM_Perc
+from PERCS  WITH (NOLOCK)
+;
+
+-- Enrollments organized for Discipline 10 year trend
+
+WITH CHRT AS (
+select count(id) as id, term_desc, 
+	case
+	when degc_code = 'JD' and styp_code in ('T','P') then 'P'
+	when degc_code in ('JSD','LLM','MSL','NDEG') and styp_code in ('T','P') then 'G'
+	ELSE STYP_CODE
+	END as styp_code,
+
+	case 
+	when degc_code = 'JD' and styp_code in ('T','P') then 'First Term Professional'
+	when degc_code in ('JSD','LLM','MSL','NDEG') and styp_code in ('T','P') then 'First Term Graduate Student'
+	ELSE STYP_DESC
+	END AS styp_desc,
+	
+	case 
+	when gender is NULL then 'N'
+	ELSE gender
+	END AS gender, 
+
+	ethnic_desc,
+
+	case 
+	when ETHNIC_CODE in ('B','N','H') then 'URM'
+	else 'Non-URM' END AS URM,
+	
+	age,
+
+	case 
+	when age <18 then 'Under 18'
+	when age in (18,19,20, 21) then '18 - 21'
+	when age in (22,23,24) then '22 - 24'
+	when age >=25 and age <=39 then '25 - 39'
+	when age >=40 and age< =64 then '40 - 64'
+	when age >=65 then '65 and over'
+	END AS agegroup,
+
+	ft_pt, majr_desc1, degc_code, level,
+
+	case
+	when level in ('GR', 'PR') then 'GR/PR'
+	ELSE level END AS LevelUPD, 
+
+	discipline, uopi_status, UOPI_Concentration, region, season+' '+year AS term
+	
+from ENR WITH (NOLOCK)
+where report = '1'
+and season = 'fall' and year >= '2013'
+group by term_desc, styp_code, styp_desc, gender, ethnic_code, ethnic_desc, age, ft_pt, majr_desc1, degc_code, level, discipline, uopi_status, 
+         UOPI_Concentration, region, season + ' ' + year
+)
+
+,
+PERCS AS (
+select term, discipline, 
+sum (case when Level = 'UG' and URM = 'URM' then id ELSE 0 END) AS UG_URM,
+sum (case when Level = 'UG' then id ELSE 0 END) AS UG_ENR,
+sum (case when Level = 'GR' and URM = 'URM' then id ELSE 0 END) AS GR_URM,
+sum (case when Level = 'GR' then id ELSE 0 END) AS GR_ENR, 
+sum (case when Level = 'PR' and URM = 'URM' then id ELSE 0 END) AS PR_URM,
+sum (case when Level = 'PR' then id ELSE 0 END) AS PR_ENR, 
+sum (case when  URM = 'URM' then id ELSE 0 END) AS Enr_URM,
+sum (id) as Enr
+FROM CHRT  WITH (NOLOCK)
+WHERE Term like ('%2024')
+group by term, discipline
+
+)
+
+select term,  discipline,  
+format((NULLIF(cast(UG_URM AS decimal),0)/ NULLIF(cast(UG_ENR as decimal),0)) *100, '0.0') AS UG_URM_Perc,
+format((NULLIF(cast(GR_URM AS decimal),0)/ NULLIF(cast(GR_ENR as decimal),0)) *100, '0.0') AS GR_URM_Perc,
+format((NULLIF(cast(PR_URM AS decimal),0)/ NULLIF(cast(PR_ENR as decimal),0)) *100, '0.0') AS PR_URM_Perc,
+format((NULLIF(cast(Enr_URM AS decimal),0)/ NULLIF(cast(Enr as decimal),0)) *100, '0.0') AS Enr_URM_Perc
+from PERCS  WITH (NOLOCK)
+
+order by term ASC,
+case DISCIPLINE 
+	when 'COP - Humanities' then 1 
+	when 'COP - Natural Sciences' then 2 
+	when 'COP - Social Sciences' then 3
+	when 'COP - Exploratory'then 4
+	when 'ESB' then 5
+	when 'BC' then 6
+	when 'SOECS' then 7
+	when 'COM'then 8
+	when 'SHS' then 9
+	when 'SOP'then 10
+	when 'DEN' then 11
+	when 'LAW'then 12
+	when 'UW'then 13
+	when 'UNC' then 14
+	END
