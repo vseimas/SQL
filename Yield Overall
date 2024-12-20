@@ -1,0 +1,31 @@
+-- Yeild - First-Year Students enrolled/admitted  % overall
+-- Admitted
+WITH adms AS(
+select term_code_key, count(case 
+	when apst_code in ('C', 'D') then id END) AS FYapplied, -- for completed apps only – use completed apps to calculate selectivity rate beginning in fall 2022
+	count(case 
+	when apdc_code1 in ('A1','AC','AI','CC','C2','CO','FL','NC','TF','NP') then id END) AS Admitted
+from adm WITH (NOLOCK)
+where year = '2023' and season = 'fall'
+and styp_code = 'n'
+group by term_code_key
+
+)
+, 
+--Enrolled
+enrs AS(
+select term_code_key, count(id) Enrolled
+from enr WITH (NOLOCK)
+where year = '2023' and season = 'fall'
+and report = '1'
+and styp_code = 'n'
+and level = 'ug'
+group by term_code_key
+
+)
+-- overall %
+SELECT Enrolled, Admitted, format((cast(Enrolled AS decimal)/ NULLIF(cast(Admitted as decimal),0)) *100, '0.0') AS YeildPerc
+FROM adms as a
+JOIN enrs as e ON a.TERM_CODE_KEY = e.TERM_CODE_KEY 
+GROUP BY Enrolled, Admitted	
+;
