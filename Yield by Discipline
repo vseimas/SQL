@@ -1,0 +1,73 @@
+-- Yeild - First-Year Students enrolled/admitted  % by discipline
+
+--- before complting this query, you need to determine if there are any students incorrectly coded (applied in a different term than the Fall they enrolled in).
+--- to do this - run query A to determine what students have different admission records
+--- then take those ids and run query B to figure out which students need to be manually added to the population in the adms CTE
+
+/* Query A
+ select id, FIRST_NAME, LAST_NAME
+FROM enr
+where report = 1
+and season = 'fall'
+and year = '2024'
+and styp_code = 'n'
+and id in (select id FROM adm where TERM_CODE_KEY < '202481' and term_code_key > '202431 'and apdc_code1 in ('A1','AC','AI','CC','C2','CO','FL','NC','TF','NP') and STYP_CODE = 'n')
+
+
+Query B
+select *
+FROM ADM
+where id in ('989484018', '989495652') 
+
+*/
+
+WITH adms AS(
+select a.term_code_key, a.year, a.discipline,
+	count(case 
+	when a.apdc_code1 in ('A1','AC','AI','CC','C2','CO','FL','NC','TF','NP') then id END) AS Admitted,
+	case when exists 
+	(select 1 FROM enr e where e.id = a.id and e.report = '1' and e.TERM_CODE_KEY = a.term_code_key and e.STYP_CODE = 'n' and a.uopi_status in ('Not UOPI', 'Integrated Accelerator')) then 1 else 0 END as Enr
+from adm a WITH (NOLOCK)
+where year = '2024' and season = 'fall'
+and styp_code = 'n' -- Remember to COMMENT OUT students from a different year or the numbers will be wrong
+
+--or (id = '989457106' and term_code_key = '202351') --This student enrolled in Fall 2023 with an admission record in Summer 2023. Need to add in because syntax is built off the population of those who applied each fall semester.
+--or (id = '989464374' and term_code_key = '202351') --This student enrolled in Fall 2023 with an admission record in Summer 2023. Need to add in because syntax is built off the population of those who applied each fall semester.
+--or (id = '989457102' and term_code_key = '202351') --This student enrolled in Fall 2023 with an admission record in Summer 2023. Need to add in because syntax is built off the population of those who applied each fall semester.
+or (id = '989495652' and term_code_key = '202451') --This student enrolled in Fall 2024 with an admission record in Summer 2024. Need to add in because syntax is built off the population of those who applied each fall semester. 
+group by a.id, a.UOPI_Status, a.term_code_key, a.year, a.discipline
+
+)
+
+, calc AS(
+SELECT year, DISCIPLINE,  
+sum(Enr) as Enrolled,
+sum(Admitted) as Admitted
+FROM adms
+group by year, DISCIPLINE 
+
+)
+
+
+-- overall %
+SELECT discipline, Enrolled, Admitted, format((cast(Enrolled AS decimal)/ NULLIF(cast(Admitted as decimal),0)) *100, '0.0') AS YeildPerc
+FROM calc 
+GROUP BY discipline, Enrolled, Admitted
+ORDER BY 
+case DISCIPLINE 
+	when 'COP - Humanities' then 1 
+	when 'COP - Natural Sciences' then 2 
+	when 'COP - Social Sciences' then 3
+	when 'COP - Exploratory'then 4
+	when 'ESB' then 5
+	when 'BC' then 6
+	when 'SOECS' then 7
+	when 'COM'then 8
+	when 'SHS' then 9
+	when 'SOP'then 10
+	when 'DEN' then 11
+	when 'LAW'then 12
+	when 'UW'then 13
+	when 'UNC' then 14
+	ELSE 15
+	END;
