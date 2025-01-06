@@ -1,0 +1,20 @@
+WITH H2024 AS (
+select distinct id, pidm_key, season, year, level, 
+case
+when id in (select [Student ID] from RMS_HOUSING_2024F) then 1
+else 0 END as on_Campus
+from ENR WITH (NOLOCK)
+where report = '1' and season = 'fall' and year = '2024'
+)
+,
+
+CAMP AS (
+select season+' '+year term, count(id) AS headcount, sum(on_campus) AS campus
+from H2024 WITH (NOLOCK)
+where level = 'UG'
+group by season, year
+
+)
+
+select term, format((cast(campus AS decimal)/ NULLIF(cast(headcount as decimal),0)) *100, '0.#') AS perc
+From CAMP WITH (NOLOCK)
