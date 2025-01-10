@@ -1,4 +1,6 @@
 /* creating the Pivot table - straight logic
+--- The items in [] are VALUES in the appropriate COURSE field.  The Values need to be listed out to PIVOT so the query needs to be run striaght the values befor a PIVOT can be done successfully.
+--- If I want to use this PIVOT for the Conservatory GEs the next semester, I will need to run my other queries to determine which classes need to go as column headers
 select Coll_DESC, [MCOM 002], [MHIS 005], [MHIS 006], [MHIS 007], [MMGT 011], [MPER 070], [MPER 073], [MPER 083], [MUJZ 008]
 FROM (
 select Coll_Desc, ID, SUBJ_CODE+ ' ' +COURSE_NUMBER as COURSE
