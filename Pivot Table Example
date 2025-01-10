@@ -1,0 +1,51 @@
+/* creating the Pivot table - straight logic
+select Coll_DESC, [MCOM 002], [MHIS 005], [MHIS 006], [MHIS 007], [MMGT 011], [MPER 070], [MPER 073], [MPER 083], [MUJZ 008]
+FROM (
+select Coll_Desc, ID, SUBJ_CODE+ ' ' +COURSE_NUMBER as COURSE
+FROM COURSE_ATTRIBUTES
+where COURSE_COLLEGE_CODE = 'MU'
+and season = 'fall' and year = '2024'
+and GE_Attribute is not NULL
+) AS SourceTable
+PIVOT
+( count(ID)
+FOR COURSE in ([MCOM 002], [MHIS 005], [MHIS 006], [MHIS 007], [MMGT 011], [MPER 070], [MPER 073], [MPER 083], [MUJZ 008])
+)
+AS PivotTable;  
+*/
+
+-- ALL students in the class
+-- Pivoting the data
+select Coll_DESC As College, [MCOM 002], [MHIS 005], [MHIS 006], [MHIS 007], [MMGT 011], [MPER 070], [MPER 073], [MPER 083], [MUJZ 008],
+[MCOM 002]+[MHIS 005]+[MHIS 006]+[MHIS 007]+[MMGT 011]+[MPER 070]+[MPER 073]+[MPER 083]+[MUJZ 008] AS "College Total" --- adding row totals
+FROM (
+select Coll_Desc, ID, SUBJ_CODE+ ' ' +COURSE_NUMBER as COURSE
+FROM COURSE_ATTRIBUTES
+where COURSE_COLLEGE_CODE = 'MU'
+and season = 'fall' and year = '2024'
+and GE_Attribute is not NULL
+) AS SourceTable
+PIVOT
+( count(ID)
+FOR COURSE in ([MCOM 002], [MHIS 005], [MHIS 006], [MHIS 007], [MMGT 011], [MPER 070], [MPER 073], [MPER 083], [MUJZ 008])
+)
+AS PivotTable
+
+UNION ALL  --- adding column totals
+
+select 'Class Total' AS Coll_DESC, SUM([MCOM 002]) AS "MCOM 002", SUM([MHIS 005]) AS "MHIS 005", SUM([MHIS 006]) AS "MHIS 006", 
+SUM([MHIS 007]) AS "MHIS 007", SUM([MMGT 011]) AS "MMGT 001", SUM([MPER 070]) AS "MPER 070", SUM([MPER 073]) AS "MPER 073", 
+SUM([MPER 083]) AS "MPER 083", SUM([MUJZ 008]) AS "MUJZ 008",
+SUM([MCOM 002]+[MHIS 005]+[MHIS 006]+[MHIS 007]+[MMGT 011]+[MPER 070]+[MPER 073]+[MPER 083]+[MUJZ 008]) AS Class_Total
+FROM (
+select Coll_Desc, ID, SUBJ_CODE+ ' ' +COURSE_NUMBER as COURSE
+FROM COURSE_ATTRIBUTES
+where COURSE_COLLEGE_CODE = 'MU'
+and season = 'fall' and year = '2024'
+and GE_Attribute is not NULL
+) AS SourceTable
+PIVOT
+( count(ID)
+FOR COURSE in ([MCOM 002], [MHIS 005], [MHIS 006], [MHIS 007], [MMGT 011], [MPER 070], [MPER 073], [MPER 083], [MUJZ 008])
+)
+AS PivotTable;
