@@ -1,0 +1,125 @@
+--- Data Request 89 1.10.25
+
+--- GE Sections Being Taught
+with CRND AS (
+select distinct crn_key AS courses
+from Course_Attributes
+where COURSE_COLLEGE_CODE = 'MU'
+and season = 'fall' and year = '2024'
+and GE_Attribute is not NULL
+)
+
+select count(courses) as "Section Count"
+from CRND;
+
+--- GE Courses and Their Enrollment
+select GE_Attribute as [GE Category],
+SUBJ_CODE+ ' ' +COURSE_NUMBER as COURSE,
+count(ID) as StudentCount,
+sum(case COM_Major when 'Major' then 1 else 0 END) AS "Music Major",
+sum(case COM_Major when 'Non Major' then 1 else 0 END) AS "Non-Music Major"
+from Course_Attributes
+where COURSE_COLLEGE_CODE = 'MU'
+and season = 'fall' and year = '2024'
+and GE_Attribute is not NULL
+group by GE_Attribute, SUBJ_CODE, COURSE_NUMBER
+order BY GE_Attribute ASC, SUBJ_CODE+ ' ' +COURSE_NUMBER;
+
+--- GE Courses and Their Enrollment, includes course title
+select GE_Attribute as [GE Category],
+SUBJ_CODE+ ' ' +COURSE_NUMBER as COURSE, COURSE_TITLE As TITLE,
+count(ID) as StudentCount,
+sum(case COM_Major when 'Major' then 1 else 0 END) AS "Music Major",
+sum(case COM_Major when 'Non Major' then 1 else 0 END) AS "Non-Music Major"
+from Course_Attributes
+where COURSE_COLLEGE_CODE = 'MU'
+and season = 'fall' and year = '2024'
+and GE_Attribute is not NULL
+group by GE_Attribute, SUBJ_CODE, COURSE_NUMBER, COURSE_TITLE
+order BY GE_Attribute ASC, SUBJ_CODE+ ' ' +COURSE_NUMBER, COURSE_TITLE;
+
+
+--- GE Courses and Their Enrollment, includes section CRN
+select GE_Attribute as [GE Category],
+SUBJ_CODE+ ' ' +COURSE_NUMBER as COURSE, COURSE_TITLE As TITLE, crn_key As CRN,
+count(ID) as StudentCount,
+sum(case COM_Major when 'Major' then 1 else 0 END) AS "Music Major",
+sum(case COM_Major when 'Non Major' then 1 else 0 END) AS "Non-Music Major"
+from Course_Attributes
+where COURSE_COLLEGE_CODE = 'MU'
+and season = 'fall' and year = '2024'
+and GE_Attribute is not NULL
+group by GE_Attribute, SUBJ_CODE, COURSE_NUMBER, COURSE_TITLE, crn_key 
+order BY GE_Attribute ASC, SUBJ_CODE+ ' ' +COURSE_NUMBER, COURSE_TITLE, crn_key ;
+
+--- Headcount in GE Classes
+select GE_Attribute, count(ID) as StudentCount,
+sum(case COM_Major when 'Major' then 1 else 0 END) AS "Music Major",
+sum(case COM_Major when 'Non Major' then 1 else 0 END) AS "Non-Music Major"
+from Course_Attributes
+where COURSE_COLLEGE_CODE = 'MU'
+and season = 'fall' and year = '2024'
+and GE_Attribute is not NULL
+group by GE_Attribute;
+
+--- Headcount in GE Classes, with GE Title
+select GE_Attribute, GE_Attribute_Desc, count(ID) as StudentCount,
+sum(case COM_Major when 'Major' then 1 else 0 END) AS "Music Major",
+sum(case COM_Major when 'Non Major' then 1 else 0 END) AS "Non-Music Major"
+from Course_Attributes
+where COURSE_COLLEGE_CODE = 'MU'
+and season = 'fall' and year = '2024'
+and GE_Attribute is not NULL
+group by GE_Attribute, GE_Attribute_Desc
+order by GE_Attribute;
+
+
+--- Headcount in GE Classes by Degree Code
+select DEGC_CODE, count(ID) as StudentCount,
+sum(case COM_Major when 'Major' then 1 else 0 END) AS "Music Major",
+sum(case COM_Major when 'Non Major' then 1 else 0 END) AS "Non-Music Major"
+from Course_Attributes
+where COURSE_COLLEGE_CODE = 'MU'
+and season = 'fall' and year = '2024'
+and GE_Attribute is not NULL
+group by DEGC_CODE;
+
+--- Headcount in GE Classes by Degree Code, includes Degree Description
+select DEGC_CODE, DEGC_DESC, count(ID) as StudentCount,
+sum(case COM_Major when 'Major' then 1 else 0 END) AS "Music Major",
+sum(case COM_Major when 'Non Major' then 1 else 0 END) AS "Non-Music Major"
+from Course_Attributes
+where COURSE_COLLEGE_CODE = 'MU'
+and season = 'fall' and year = '2024'
+and GE_Attribute is not NULL
+group by DEGC_CODE, DEGC_DESC
+order by DEGC_CODE;
+
+
+--- Headcount in GE Classes by College
+select Coll_Desc, count(ID) as StudentCount
+from Course_Attributes
+where COURSE_COLLEGE_CODE = 'MU'
+and season = 'fall' and year = '2024'
+and GE_Attribute is not NULL
+group by Coll_Desc
+order by Coll_Desc;
+
+
+--- Headcount in GE Classes by College and Degree (add COurse back in to add this dimension)
+select Coll_Desc, MAJR_CODE1, MAJR_DESC1, count(ID) as StudentCount 
+--,SUBJ_CODE+ ' ' +COURSE_NUMBER as COURSE
+from Course_Attributes
+where COURSE_COLLEGE_CODE = 'MU'
+and season = 'fall' and year = '2024'
+and GE_Attribute is not NULL
+group by Coll_Desc, MAJR_CODE1, MAJR_DESC1 ---, SUBJ_CODE+ ' ' +COURSE_NUMBER
+order by Coll_Desc, MAJR_CODE1;
+
+
+
+
+---select distinct MAJR_CODE1, MAJR_DESC1
+---from Course_Attributes
+
+---select * from Course_Attributes where season = 'fall' and year = '2024' and  COURSE_COLLEGE_CODE = 'MU' and GE_Attribute is not NULL
