@@ -50,7 +50,7 @@ group by term_desc, styp_code, styp_desc, gender, ethnic_code, ethnic_desc, age,
          UOPI_Concentration, region, season + ' ' + year
 )
 --- union the levels together to create an easy to read chart
-
+, CHRTPERC AS(
 SELECT 'UG' AS Level,
        SUM(CASE WHEN gender = 'F' THEN id ELSE 0 END) AS Females,
 	   FORMAT((SUM(CASE WHEN gender = 'F' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS Female_Perc,
@@ -109,5 +109,8 @@ SELECT 'Gender_Total' AS Level,
 	   Sum(id) AS Level_Total
 FROM CHRT WITH (NOLOCK)
 WHERE Term like ('%2024')
+)
 
+select level, Female_Perc, Male_Perc, Other_Perc
+from CHRTPERC
 ;
