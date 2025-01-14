@@ -183,5 +183,5 @@ WHERE Term like ('%2024')
 
 )
 
-Select Level, URM_Perc, Int_Perc, BlackAA_Perc, Natv_Perc, Asian_Perc, Isld_Perc, HispL_Perc, White_Perc, Mult_Perc, Unkn_Perc, Level_Total
+Select Level, URM_Perc, Int_Perc, BlackAA_Perc, Natv_Perc, Asian_Perc, Isld_Perc, HispL_Perc, White_Perc, Mult_Perc, Unkn_Perc
 From CHRTPERC
