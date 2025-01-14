@@ -1,0 +1,182 @@
+--- created a CTE to report off of instead of using a temp table
+WITH CHRT AS (
+select count(id) as id, term_desc, 
+	case
+	when degc_code = 'JD' and styp_code in ('T','P') then 'P'
+	when degc_code in ('JSD','LLM','MSL','NDEG') and styp_code in ('T','P') then 'G'
+	ELSE STYP_CODE
+	END as styp_code,
+
+	case 
+	when degc_code = 'JD' and styp_code in ('T','P') then 'First Term Professional'
+	when degc_code in ('JSD','LLM','MSL','NDEG') and styp_code in ('T','P') then 'First Term Graduate Student'
+	ELSE STYP_DESC
+	END AS styp_desc,
+	
+	case 
+	when gender is NULL then 'N'
+	ELSE gender
+	END AS gender, 
+
+	ethnic_code,
+	ethnic_desc,
+
+	case 
+	when ETHNIC_CODE in ('B','N','H') then 'URM'
+	else 'Non-URM' END AS URM,
+	
+	age,
+
+	case 
+	when age <18 then 'Under 18'
+	when age in (18,19,20, 21) then '18 - 21'
+	when age in (22,23,24) then '22 - 24'
+	when age >=25 and age <=39 then '25 - 39'
+	when age >=40 and age< =64 then '40 - 64'
+	when age >=65 then '65 and over'
+	END AS agegroup,
+
+	ft_pt, majr_desc1, degc_code, level,
+
+	case
+	when level in ('GR', 'PR') then 'GR/PR'
+	ELSE level END AS LevelUPD, 
+
+	discipline, uopi_status, UOPI_Concentration, region, season+' '+year AS term
+	
+from ENR WITH (NOLOCK)
+where report = '1'
+and season = 'fall' and year >= '2013'
+group by term_desc, styp_code, styp_desc, gender, ethnic_code, ethnic_desc, age, ft_pt, majr_desc1, degc_code, level, discipline, uopi_status, 
+         UOPI_Concentration, region, season + ' ' + year
+)
+--- union the levels together to create an easy to read chart
+
+SELECT 'UG' AS Level,
+	   SUM(CASE WHEN URM = 'URM' THEN id ELSE 0 END) AS URM,
+	   FORMAT((SUM(CASE WHEN URM = 'URM' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS URM_Perc,
+       SUM(CASE WHEN ethnic_code = 'F' THEN id ELSE 0 END) AS International,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'F' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS Int_Perc,
+	   SUM(CASE WHEN ethnic_code = 'B' THEN id ELSE 0 END) AS BlackAA,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'B' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS BlackAA_Perc,
+       SUM(CASE WHEN ethnic_code = 'N' THEN id ELSE 0 END) AS IndNative,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'N' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS Natv_Perc,
+       SUM(CASE WHEN ethnic_code = 'S' THEN id ELSE 0 END) AS Asian,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'S' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS Asian_Perc,
+	   SUM(CASE WHEN ethnic_code = 'P' THEN id ELSE 0 END) AS Islander,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'P' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS Isld_Perc,
+	   SUM(CASE WHEN ethnic_code = 'H' THEN id ELSE 0 END) AS HispanicL,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'H' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS HispL_Perc,
+       SUM(CASE WHEN ethnic_code = 'W' THEN id ELSE 0 END) AS White,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'W' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS White_Perc,
+	   SUM(CASE WHEN ethnic_code = 'M' THEN id ELSE 0 END) AS Multiple,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'M' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS Mult_Perc,
+       SUM(CASE WHEN ethnic_code = 'U' THEN id ELSE 0 END) AS Unknown,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'U' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS Unkn_Perc,
+	   Sum(id) AS Level_Total
+FROM CHRT WITH (NOLOCK)
+WHERE level = 'UG' and Term like ('%2024')
+GROUP BY level
+UNION ALL
+SELECT 'GR' AS Level,
+	   SUM(CASE WHEN URM = 'URM' THEN id ELSE 0 END) AS URM,
+	   FORMAT((SUM(CASE WHEN URM = 'URM' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS URM_Perc,
+       SUM(CASE WHEN ethnic_code = 'F' THEN id ELSE 0 END) AS International,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'F' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS Int_Perc,
+	   SUM(CASE WHEN ethnic_code = 'B' THEN id ELSE 0 END) AS BlackAA,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'B' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS BlackAA_Perc,
+       SUM(CASE WHEN ethnic_code = 'N' THEN id ELSE 0 END) AS IndNative,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'N' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS Natv_Perc,
+       SUM(CASE WHEN ethnic_code = 'S' THEN id ELSE 0 END) AS Asian,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'S' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS Asian_Perc,
+	   SUM(CASE WHEN ethnic_code = 'P' THEN id ELSE 0 END) AS Islander,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'P' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS Isld_Perc,
+	   SUM(CASE WHEN ethnic_code = 'H' THEN id ELSE 0 END) AS HispanicL,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'H' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS HispL_Perc,
+       SUM(CASE WHEN ethnic_code = 'W' THEN id ELSE 0 END) AS White,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'W' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS White_Perc,
+	   SUM(CASE WHEN ethnic_code = 'M' THEN id ELSE 0 END) AS Multiple,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'M' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS Mult_Perc,
+       SUM(CASE WHEN ethnic_code = 'U' THEN id ELSE 0 END) AS Unknown,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'U' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS Unkn_Perc,
+	   Sum(id) AS Level_Total
+FROM CHRT WITH (NOLOCK)
+WHERE level = 'GR' and Term like ('%2024')
+GROUP BY level
+UNION ALL
+SELECT 'PR' AS Level,
+	   SUM(CASE WHEN URM = 'URM' THEN id ELSE 0 END) AS URM,
+	   FORMAT((SUM(CASE WHEN URM = 'URM' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS URM_Perc,
+       SUM(CASE WHEN ethnic_code = 'F' THEN id ELSE 0 END) AS International,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'F' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS Int_Perc,
+	   SUM(CASE WHEN ethnic_code = 'B' THEN id ELSE 0 END) AS BlackAA,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'B' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS BlackAA_Perc,
+       SUM(CASE WHEN ethnic_code = 'N' THEN id ELSE 0 END) AS IndNative,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'N' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS Natv_Perc,
+       SUM(CASE WHEN ethnic_code = 'S' THEN id ELSE 0 END) AS Asian,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'S' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS Asian_Perc,
+	   SUM(CASE WHEN ethnic_code = 'P' THEN id ELSE 0 END) AS Islander,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'P' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS Isld_Perc,
+	   SUM(CASE WHEN ethnic_code = 'H' THEN id ELSE 0 END) AS HispanicL,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'H' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS HispL_Perc,
+       SUM(CASE WHEN ethnic_code = 'W' THEN id ELSE 0 END) AS White,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'W' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS White_Perc,
+	   SUM(CASE WHEN ethnic_code = 'M' THEN id ELSE 0 END) AS Multiple,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'M' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS Mult_Perc,
+       SUM(CASE WHEN ethnic_code = 'U' THEN id ELSE 0 END) AS Unknown,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'U' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS Unkn_Perc,
+	   Sum(id) AS Level_Total
+FROM CHRT WITH (NOLOCK)
+WHERE level = 'PR' and Term like ('%2024')
+GROUP BY level
+UNION ALL
+SELECT 'GR/PR' AS LevelUPD,
+	   SUM(CASE WHEN URM = 'URM' THEN id ELSE 0 END) AS URM,
+	   FORMAT((SUM(CASE WHEN URM = 'URM' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS URM_Perc,
+       SUM(CASE WHEN ethnic_code = 'F' THEN id ELSE 0 END) AS International,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'F' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS Int_Perc,
+	   SUM(CASE WHEN ethnic_code = 'B' THEN id ELSE 0 END) AS BlackAA,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'B' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS BlackAA_Perc,
+       SUM(CASE WHEN ethnic_code = 'N' THEN id ELSE 0 END) AS IndNative,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'N' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS Natv_Perc,
+       SUM(CASE WHEN ethnic_code = 'S' THEN id ELSE 0 END) AS Asian,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'S' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS Asian_Perc,
+	   SUM(CASE WHEN ethnic_code = 'P' THEN id ELSE 0 END) AS Islander,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'P' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS Isld_Perc,
+	   SUM(CASE WHEN ethnic_code = 'H' THEN id ELSE 0 END) AS HispanicL,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'H' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS HispL_Perc,
+       SUM(CASE WHEN ethnic_code = 'W' THEN id ELSE 0 END) AS White,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'W' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS White_Perc,
+	   SUM(CASE WHEN ethnic_code = 'M' THEN id ELSE 0 END) AS Multiple,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'M' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS Mult_Perc,
+       SUM(CASE WHEN ethnic_code = 'U' THEN id ELSE 0 END) AS Unknown,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'U' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS Unkn_Perc,
+	   Sum(id) AS Level_Total
+FROM CHRT WITH (NOLOCK)
+WHERE LevelUPD = 'GR/PR' and Term like ('%2024')
+GROUP BY LevelUPD
+UNION ALL
+SELECT 'Race/Ethnicity_Total' AS Level,
+	   SUM(CASE WHEN URM = 'URM' THEN id ELSE 0 END) AS URM,
+	   FORMAT((SUM(CASE WHEN URM = 'URM' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS URM_Perc,
+       SUM(CASE WHEN ethnic_code = 'F' THEN id ELSE 0 END) AS International,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'F' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS Int_Perc,
+	   SUM(CASE WHEN ethnic_code = 'B' THEN id ELSE 0 END) AS BlackAA,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'B' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS BlackAA_Perc,
+       SUM(CASE WHEN ethnic_code = 'N' THEN id ELSE 0 END) AS IndNative,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'N' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS Natv_Perc,
+       SUM(CASE WHEN ethnic_code = 'S' THEN id ELSE 0 END) AS Asian,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'S' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS Asian_Perc,
+	   SUM(CASE WHEN ethnic_code = 'P' THEN id ELSE 0 END) AS Islander,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'P' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS Isld_Perc,
+	   SUM(CASE WHEN ethnic_code = 'H' THEN id ELSE 0 END) AS HispanicL,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'H' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS HispL_Perc,
+       SUM(CASE WHEN ethnic_code = 'W' THEN id ELSE 0 END) AS White,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'W' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS White_Perc,
+	   SUM(CASE WHEN ethnic_code = 'M' THEN id ELSE 0 END) AS Multiple,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'M' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS Mult_Perc,
+       SUM(CASE WHEN ethnic_code = 'U' THEN id ELSE 0 END) AS Unknown,
+	   FORMAT((SUM(CASE WHEN ethnic_code = 'U' THEN id ELSE 0 END) * 100.0) / NULLIF(SUM(id), 0), '0.#') AS Unkn_Perc,
+	   Sum(id) AS Level_Total
+FROM CHRT WITH (NOLOCK)
+WHERE Term like ('%2024')
