@@ -1,0 +1,33 @@
+--- use ARCHIVE to run this query
+
+Select year, sum(case when grad_6yr = 1 and PELL = 1 then 1 else 0 END ) AS PellGrads,
+    sum(case when PELL = 1 then 1 else 0 END ) AS Pells,
+    FORMAT((sum(case when grad_6yr = 1 and PELL = 1 then 1 else 0 END ) * 100.0) / NULLIF(sum(case when PELL = 1 then 1 else 0 END ), 0), '0.#') AS Perc
+from dbo.RETENTION_First_Year_2024_10_22_CENSUS WITH (NOLOCK)
+group by year
+order by year desc
+
+Select DISCIPLINE, sum(case when grad_6yr = 1 and PELL = 1 then 1 else 0 END ) AS PellGrads,
+    sum(case when PELL = 1 then 1 else 0 END ) AS Pells,
+    FORMAT((sum(case when grad_6yr = 1 and PELL = 1 then 1 else 0 END ) * 100.0) / NULLIF(sum(case when PELL = 1 then 1 else 0 END ), 0), '0.#') AS Perc,
+    case when sum(case when PELL = 1 then 1 else 0 END )<10 then 'Y' else null end AS LESSTHAN10
+from dbo.RETENTION_First_Year_2024_10_22_CENSUS WITH (NOLOCK)
+where year = '2017'
+group by DISCIPLINE
+ORDER BY
+case DISCIPLINE
+	when 'COP - Humanities' then 1
+	when 'COP - Natural Sciences' then 2
+	when 'COP - Social Sciences' then 3
+	when 'COP - Exploratory'then 4
+	when 'ESB' then 5
+	when 'BC' then 6
+	when 'SOECS' then 7
+	when 'COM'then 8
+	when 'SHS' then 9
+	when 'SOP'then 10
+	when 'DEN' then 11
+	when 'LAW'then 12
+	when 'UW'then 13
+	when 'UNC' then 14
+	END
