@@ -1,13 +1,11 @@
 Select year, count(id) as COhort, sum(case retrn_2yr when 1 then 1 else 0 END ) AS Returned,
-        FORMAT((SUM(CASE retrn_2yr when 1 then 1 else 0 END) * 100.0) / NULLIF(count(id), 0), '0.#') AS Perc,
-        SUM(CASE retrn_2yr when 1 then 1 else 0 END) * 100.0 / count(id) AS Perc2
+        FORMAT((SUM(CASE retrn_2yr when 1 then 1 else 0 END) * 100.0) / NULLIF(count(id), 0), '0.#') AS Perc
 from dbo.RETENTION_First_Year_2024_10_22_CENSUS WITH (NOLOCK)
 group by year
 order by year desc
 
 Select DISCIPLINE, count(id) as COhort, sum(case retrn_2yr when 1 then 1 else 0 END ) AS Returned,
-        FORMAT((SUM(CASE retrn_2yr when 1 then 1 else 0 END) * 100.0) / NULLIF(count(id), 0), '0.#') AS Perc,
-        SUM(CASE retrn_2yr when 1 then 1 else 0 END) * 100.0 / count(id) AS Perc2
+        FORMAT((SUM(CASE retrn_2yr when 1 then 1 else 0 END) * 100.0) / NULLIF(count(id), 0), '0.#') AS Perc
 from dbo.RETENTION_First_Year_2024_10_22_CENSUS WITH (NOLOCK)
 where year = '2023'
 group by DISCIPLINE
