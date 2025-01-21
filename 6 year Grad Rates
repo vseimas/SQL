@@ -1,0 +1,30 @@
+--- use ARCHIVE to run this query
+
+Select year, count(id) as COhort, sum(case grad_6yr when 1 then 1 else 0 END ) AS Returned,
+        FORMAT((SUM(CASE grad_6yr when 1 then 1 else 0 END) * 100.0) / NULLIF(count(id), 0), '0.#') AS Perc
+from dbo.RETENTION_First_Year_2024_10_22_CENSUS WITH (NOLOCK)
+group by year
+order by year desc
+
+Select DISCIPLINE, count(id) as COhort, sum(case grad_6yr when 1 then 1 else 0 END ) AS Returned,
+        FORMAT((SUM(CASE grad_6yr when 1 then 1 else 0 END) * 100.0) / NULLIF(count(id), 0), '0.#') AS Perc
+from dbo.RETENTION_First_Year_2024_10_22_CENSUS WITH (NOLOCK)
+where year = '2018'
+group by DISCIPLINE
+ORDER BY
+case DISCIPLINE
+	when 'COP - Humanities' then 1
+	when 'COP - Natural Sciences' then 2
+	when 'COP - Social Sciences' then 3
+	when 'COP - Exploratory'then 4
+	when 'ESB' then 5
+	when 'BC' then 6
+	when 'SOECS' then 7
+	when 'COM'then 8
+	when 'SHS' then 9
+	when 'SOP'then 10
+	when 'DEN' then 11
+	when 'LAW'then 12
+	when 'UW'then 13
+	when 'UNC' then 14
+	END
