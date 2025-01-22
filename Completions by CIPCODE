@@ -1,0 +1,55 @@
+
+--- Pulling out the Cipcodes and attaching them to Degree 1 and 2
+WITH CDJ AS (
+select d.id, d.TERM_CODE_GRADUATION, d.DEGC_CODE, d.DEGS_DESC, d.MAJR_CODE1_DEGREE, d.MAJR_DESC1_DEGREE, 
+d.MAJR_CODE1_2_DEGREE, d.MAJR_DESC1_2_DEGREE,
+LEFT(s1.STVMAJR_CIPC_CODE,2) As CIPCODE_DEG1,
+LEFT(s2.STVMAJR_CIPC_CODE,2) As CIPCODE_DEG2
+FROM DEGREES d
+left join 
+ STVMAJR s1 on d.MAJR_CODE1_DEGREE = s1.STVMAJR_CODE
+left join
+STVMAJR s2 on d.MAJR_CODE1_2_DEGREE = s2.STVMAJR_CODE
+WHERE  DEGC_CODE LIKE 'B%'
+and
+((DEGS_CODE in ('AW', 'CA', 'TC') AND TERM_CODE_GRADUATION BETWEEN '202334' AND '202433') OR (DEGS_CODE in ('AW', 'CA', 'TC') AND TERM_CODE_GRADUATION = '202451'))
+ )
+/*
+ select CIPCODE_DEG1, CIPCODE_DEG2, count(id) As Awarded
+ from CDJ
+ group by CIPCODE_DEG1, CIPCODE_DEG2
+ order by  CIPCODE_DEG1 , CIPCODE_DEG2
+
+ SELECT CIPCODE_DEG1 AS CIPCODE, count(id) As Awarded
+ FROM CDJ
+ group by CIPCODE_DEG1
+
+ UNION ALL
+
+ SELECT CIPCODE_DEG2 AS CIPCODE, count(id) As Awarded
+ FROM CDJ
+  where CIPCODE_DEG2 is not null
+ group by CIPCODE_DEG2
+ 
+
+ order by CIPCODE
+*/
+
+--- combining Degree 1 and 2 together in a list that can be grouped together for an overall total
+--- validated that it is pulling correctly when grouped together; difference between SQL value and completions value is probably based off of awards still happening after survey completion
+ SELECT CIPCODE, count(id) As Awarded
+ FROM (
+	SELECT CIPCODE_DEG1 AS CIPCODE, ID
+	FROM CDJ
+	
+	UNION ALL
+
+	SELECT CIPCODE_DEG2 AS CIPCODE, id
+	 FROM CDJ
+	where CIPCODE_DEG2 is not null
+) AS CombinedCipCodes
+GROUP BY CIPCODE
+Order By CIPCODE
+ 
+
+ order by CIPCODE
