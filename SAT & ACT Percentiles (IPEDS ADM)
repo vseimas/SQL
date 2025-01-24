@@ -1,7 +1,7 @@
 
 -- Creating the temp table
 select 
-a.pidm_key, a.term_code_key, a.COLL_CODE, a.DISCIPLINE, a.majr_desc1, a.uopi_status, cast(b.IRSV as INT) as RW_SAT, cast(b.IRSM as INT) as Math_SAT, cast(b.IRSM as decimal)+cast(b.IRSV as decimal) SATT, b.TEST_SCORE6 act_composite
+a.pidm_key, a.term_code_key, a.COLL_CODE, a.DISCIPLINE, a.majr_desc1, a.uopi_status, cast(b.IRSV as INT) as RW_SAT, cast(b.IRSM as INT) as Math_SAT, cast(b.IRSM as decimal)+cast(b.IRSV as decimal) SATT, cast(b.TEST_SCORE6 AS INT) as act_composite
 into #temp
 from ENR a WITH (NOLOCK) 
 left join ADM b on a.pidm_key = b.pidm_key and a.term_code_key = b.term_code_key
