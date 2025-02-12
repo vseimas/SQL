@@ -1,96 +1,167 @@
---CLASS SECTIONS & SUBSECTIONS (UNDERGRADUATE CLASS SIZE)
---New Method: GR level courses with no UG level student enrollment were removed. Applied music sections were also removed. DHYG courses were added. Will not match anything prior to 2018-19.
---To update just the current year data, set year = '20xx'.
+WITH TempCRN AS (
+    select distinct CRN_KEY
+    from REG WITH (NOLOCK)
+    where report = '1'
+    and LEVL_CODE in ('ug', 'uu')
+    and season = 'fall' and year = '2024'
 
-
---Get all courses with UG level student enrollment
-select distinct CRN_KEY
-into #temp
-from REG
-where report = '1'
-and levl_code in ('UG', 'UU')
-and season = 'Fall' and year = '2023'
-
---Get class sections and enrollment
-select actual_enrollment, season+' '+year term, crn_key, SUBJ_CODE, CRSE_NUMBER, DEPT_CODE, DEPT_CODE_OVERRIDE, DEPT_DESC, DEPT_DESC_OVERRIDE, COLL_CODE, COLL_CODE_OVERRIDE, DISCIPLINE, CREDIT_HOURS
-into #sections
-from SECT_SUM
-where actual_enrollment > 1 
+)
+, SectionData AS (
+select actual_enrollment, crn_key, SUBJ_CODE, left(CRSE_NUMBER,3) as CRS_NUM, season+' '+year as term, DEPT_CODE, DEPT_DESC, DEPT_DESC_OVERRIDE, COLL_CODE, COLL_CODE_OVERRIDE, DISCIPLINE, CREDIT_HOURS,
+       case
+           when  actual_enrollment >=2 and actual_enrollment < 10 then '1. 2-9'
+            when actual_enrollment >=10 and actual_enrollment < 20 then '2. 10-19'
+            when actual_enrollment >=20 and actual_enrollment < 30 then '3. 20-29'
+            when actual_enrollment >=30 and actual_enrollment < 40 then '4. 30-39'
+            when actual_enrollment >=40 and actual_enrollment < 50 then '5. 40-49'
+            when actual_enrollment >=50 and actual_enrollment < 100 then '6. 50-99'
+            when actual_enrollment >= 100 then '7. 100' END AS Class_Size,
+     case
+         when actual_enrollment < 20 then 1 else 0 END as under_20,
+     case
+         when actual_enrollment > 49 then 1 else 0 END as over_50
+from SECT_SUM WITH (NOLOCK)
+where actual_enrollment > 1
   and coll_code <> 'lw'
   and (coll_code <> 'dt' or (coll_code = 'dt' and dept_code = 'DHYG'))
   and (coll_code not in ('sp','ph') or (coll_code in ('sp','ph') and dept_code = 'SLPA'))
   and schd_code_meet1 in ('1', '5', '6','7')
-and season = 'Fall' and year = '2023'
-and right(term_code_key,2) in ('52','81','84')
-union --Add Pharm 101
-select actual_enrollment, season+' '+year term, crn_key, SUBJ_CODE, CRSE_NUMBER, DEPT_CODE, DEPT_CODE_OVERRIDE, DEPT_DESC, DEPT_DESC_OVERRIDE, COLL_CODE, COLL_CODE_OVERRIDE, DISCIPLINE, CREDIT_HOURS
-from SECT_SUM
+  and season = 'fall' and year = '2024'
+ and right(term_code_key,2) in ('52','81','84')
+ UNION --- add Pharm 101
+ select actual_enrollment, crn_key, SUBJ_CODE, left(CRSE_NUMBER,3) as CRS_NUM, season+' '+year as term, DEPT_CODE, DEPT_DESC, DEPT_DESC_OVERRIDE, COLL_CODE, COLL_CODE_OVERRIDE, DISCIPLINE, CREDIT_HOURS,
+       case
+           when  actual_enrollment >=2 and actual_enrollment < 10 then '1. 2-9'
+            when actual_enrollment >=10 and actual_enrollment < 20 then '2. 10-19'
+            when actual_enrollment >=20 and actual_enrollment < 30 then '3. 20-29'
+            when actual_enrollment >=30 and actual_enrollment < 40 then '4. 30-39'
+            when actual_enrollment >=40 and actual_enrollment < 50 then '5. 40-49'
+            when actual_enrollment >=50 and actual_enrollment < 100 then '6. 50-99'
+            when actual_enrollment >= 100 then '7. 100' END AS Class_Size,
+     case
+         when actual_enrollment < 20 then 1 else 0 END as under_20,
+     case
+         when actual_enrollment > 49 then 1 else 0 END as over_50
+from SECT_SUM WITH (NOLOCK)
 where actual_enrollment > 1
 and coll_code in ('sp','ph')
 and dept_code <> 'SLPA'
 and subj_code = 'PRAC' and crse_number = '101'and title in ('Pharmacy Orientation')
-and season = 'Fall' and year = '2023'
+and season = 'Fall' and year = '2024'
+    )
+, CleanedData AS (
+    select actual_enrollment, crn_key, SUBJ_CODE, CRS_NUM, term, DEPT_CODE, DEPT_DESC, DEPT_DESC_OVERRIDE, COLL_CODE, COLL_CODE_OVERRIDE, DISCIPLINE, CREDIT_HOURS,Class_Size, under_20, over_50,
+        case
+            when CRS_NUM >= '200' and CRN_KEY not in (select CRN_KEY from TempCRN) then 0
+            when dept_code in ('copx') and CREDIT_HOURS = 0 then 0 else 1 END AS SECOUT
+    from SectionData WITH (NOLOCK)
+)
 
+, PERCT AS (SELECT term,
+                   round(avg(actual_enrollment), 0) AS TOTAL,
+                   sum(under_20)                    AS UND20,
+                   sum(over_50)                     AS OV50,
+                   count(CRN_KEY)                   AS CLS
+            from CleanedData WITH (NOLOCK)
+            where SECOUT = 1
+            group by term)
 
---Apply College/Department Overrides
-update #sections set DEPT_CODE = DEPT_CODE_OVERRIDE where DEPT_CODE_OVERRIDE is not null
-update #sections set DEPT_DESC = DEPT_DESC_OVERRIDE where DEPT_CODE_OVERRIDE is not null
-update #sections set COLL_CODE = COLL_CODE_OVERRIDE where COLL_CODE_OVERRIDE is not null
+SELECT term, cast(TOTAL AS INT) AS AvgEnr, format((cast(UND20 AS decimal)/ NULLIF(cast(CLS as decimal),0)) *100, '0.#') AS perc20,
+       format((cast(OV50 AS decimal)/ NULLIF(cast(CLS as decimal),0)) *100, '0.#') AS perc50
+    FROM PERCT WITH (NOLOCK)
+GROUP BY term, UND20, OV50, CLS, TOTAL;
 
+WITH TempCRN AS (
+    select distinct CRN_KEY
+    from REG WITH (NOLOCK)
+    where report = '1'
+    and LEVL_CODE in ('ug', 'uu')
+    and season = 'fall' and year = '2024'
 
---Remove letters from CRSE_NUMBER so you can filter out GR level courses
-update #sections set CRSE_NUMBER = left(CRSE_NUMBER,3)
+)
+, SectionData AS (
+select actual_enrollment, crn_key, SUBJ_CODE, left(CRSE_NUMBER,3) as CRS_NUM, season+' '+year as term, DEPT_CODE, DEPT_DESC, DEPT_DESC_OVERRIDE, COLL_CODE, COLL_CODE_OVERRIDE, DISCIPLINE, CREDIT_HOURS,
+       case
+           when  actual_enrollment >=2 and actual_enrollment < 10 then '1. 2-9'
+            when actual_enrollment >=10 and actual_enrollment < 20 then '2. 10-19'
+            when actual_enrollment >=20 and actual_enrollment < 30 then '3. 20-29'
+            when actual_enrollment >=30 and actual_enrollment < 40 then '4. 30-39'
+            when actual_enrollment >=40 and actual_enrollment < 50 then '5. 40-49'
+            when actual_enrollment >=50 and actual_enrollment < 100 then '6. 50-99'
+            when actual_enrollment >= 100 then '7. 100' END AS Class_Size,
+     case
+         when actual_enrollment < 20 then 1 else 0 END as under_20,
+     case
+         when actual_enrollment > 49 then 1 else 0 END as over_50
+from SECT_SUM WITH (NOLOCK)
+where actual_enrollment > 1
+  and coll_code <> 'lw'
+  and (coll_code <> 'dt' or (coll_code = 'dt' and dept_code = 'DHYG'))
+  and (coll_code not in ('sp','ph') or (coll_code in ('sp','ph') and dept_code = 'SLPA'))
+  and schd_code_meet1 in ('1', '5', '6','7')
+  and season = 'fall' and year = '2024'
+ and right(term_code_key,2) in ('52','81','84')
+ UNION --- add Pharm 101
+ select actual_enrollment, crn_key, SUBJ_CODE, left(CRSE_NUMBER,3) as CRS_NUM, season+' '+year as term, DEPT_CODE, DEPT_DESC, DEPT_DESC_OVERRIDE, COLL_CODE, COLL_CODE_OVERRIDE, DISCIPLINE, CREDIT_HOURS,
+       case
+           when  actual_enrollment >=2 and actual_enrollment < 10 then '1. 2-9'
+            when actual_enrollment >=10 and actual_enrollment < 20 then '2. 10-19'
+            when actual_enrollment >=20 and actual_enrollment < 30 then '3. 20-29'
+            when actual_enrollment >=30 and actual_enrollment < 40 then '4. 30-39'
+            when actual_enrollment >=40 and actual_enrollment < 50 then '5. 40-49'
+            when actual_enrollment >=50 and actual_enrollment < 100 then '6. 50-99'
+            when actual_enrollment >= 100 then '7. 100' END AS Class_Size,
+     case
+         when actual_enrollment < 20 then 1 else 0 END as under_20,
+     case
+         when actual_enrollment > 49 then 1 else 0 END as over_50
+from SECT_SUM WITH (NOLOCK)
+where actual_enrollment > 1
+and coll_code in ('sp','ph')
+and dept_code <> 'SLPA'
+and subj_code = 'PRAC' and crse_number = '101'and title in ('Pharmacy Orientation')
+and season = 'Fall' and year = '2024'
+    )
+, CleanedData AS (
+    select actual_enrollment, crn_key, SUBJ_CODE, CRS_NUM, term, DEPT_CODE, DEPT_DESC, DEPT_DESC_OVERRIDE, COLL_CODE, COLL_CODE_OVERRIDE,
+           case
+               when DISCIPLINE in ('PACS/Other', 'CORE/Other') then 'CORE/PACS/Other' else DISCIPLINE END AS DISC,
+        CREDIT_HOURS,Class_Size, under_20, over_50,
+        case
+            when CRS_NUM >= '200' and CRN_KEY not in (select CRN_KEY from TempCRN) then 0
+            when dept_code in ('copx') and CREDIT_HOURS = 0 then 0 else 1 END AS SECOUT
+    from SectionData WITH (NOLOCK)
+)
 
-----Check that CRSE_NUMBER has no letters
---select distinct CRSE_NUMBER
---from #sections
---order by CRSE_NUMBER
+, PERCT AS (SELECT term, DISC,
+                   round(avg(actual_enrollment), 0) AS TOTAL,
+                   sum(under_20)                    AS UND20,
+                   sum(over_50)                     AS OV50,
+                   count(CRN_KEY)                   AS CLS
+            from CleanedData WITH (NOLOCK)
+            where SECOUT = 1
+            group by term, DISC)
 
---Remove all GR level courses with no UG student enrollment
-delete from #sections where CRSE_NUMBER >= 200 and CRN_KEY not in (select CRN_KEY from #temp)
-
---Remove Pre-Dental Orientation with no credit hours
-delete from #sections where dept_code in ('copx') and CREDIT_HOURS = 0
-
---Create class size bands (CDS/US News Check)
-alter table #sections add class_size varchar(250)
-go
-
-update #sections set class_size = '1. 2-9' where actual_enrollment >=2 and actual_enrollment < 10
-update #sections set class_size = '2. 10-19' where actual_enrollment >=10 and actual_enrollment < 20
-update #sections set class_size = '3. 20-29' where actual_enrollment >=20 and actual_enrollment < 30
-update #sections set class_size = '4. 30-39' where actual_enrollment >=30 and actual_enrollment < 40
-update #sections set class_size = '5. 40-49' where actual_enrollment >=40 and actual_enrollment < 50
-update #sections set class_size = '6. 50-99' where actual_enrollment >=50 and actual_enrollment < 100
-update #sections set class_size = '7. 100' where actual_enrollment >= 100
-
-
---Update discipline so CORE/PACS/Other are categorized together
-update #sections set DISCIPLINE = 'CORE/PACS/Other' where DISCIPLINE in ('PACS/Other', 'CORE/Other')
-
-
---Create US News/President's Metrics
-alter table #sections add 
-	under_20 varchar(250),
-	over_50 varchar(250)
-go
-
-update #sections set under_20 = '0'
-update #sections set under_20 = '1' where actual_enrollment < 20
-
-update #sections set over_50 = '0'
-update #sections set over_50 = '1' where actual_enrollment > 49
-
-
-----Data to Pivot
-select * from #sections 
-
-drop table #sections
-drop table #temp
-
-
-
-
-
-
-
+SELECT term, DISC,cast(TOTAL AS INT) AS AvgEnr, format((cast(UND20 AS decimal)/ NULLIF(cast(CLS as decimal),0)) *100, '0.#') AS perc20,
+       format((cast(OV50 AS decimal)/ NULLIF(cast(CLS as decimal),0)) *100, '0.#') AS perc50
+    FROM PERCT WITH (NOLOCK)
+GROUP BY term, DISC, UND20, OV50, CLS, TOTAL
+ORDER BY
+case DISC
+	when 'COP - Humanities' then 1
+	when 'COP - Natural Sciences' then 2
+	when 'COP - Social Sciences' then 3
+	when 'COP - Exploratory'then 4
+	when 'ESB' then 5
+	when 'BC' then 6
+	when 'SOECS' then 7
+	when 'COM'then 8
+	when 'SHS' then 9
+	when 'SOH' then 10
+	when 'SOP'then 11
+	when 'DEN' then 12
+	when 'LAW'then 13
+	when 'UW'then 14
+	when 'CORE/PACS/Other' then 15
+	when 'UNC' then 16
+	END;
