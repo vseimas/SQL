@@ -1,48 +1,104 @@
------Divide out_of_state with excluding_international
-select distinct id, season+' '+year term, season, year, region, cnty_desc1, ethnic_desc, discipline
-into #temp1
-from ENR WITH (NOLOCK)
+--- Query to check if manual records need to be updated with a case statement
+--- If so, will need to check the records in Banner to determine the correct region to be set
+
+select id, ethnic_code, ethnic_desc, region, cnty_desc1, state1, season+' '+year term, season, year
+from enr WITH (NOLOCK)
 where report = '1'
-and season = 'fall' and year >= '2013'
-and levl_code = 'ug' and styp_code = 'n'
+and styp_code = 'n'
+and region = 'International'
+and ethnic_desc not in ('International')
+and season = 'fall' and year >= '2014'
+group by id, ethnic_code, ethnic_desc, region, cnty_desc1, state1, season, year
+order by year
+
+/*--- case statement example used to set the Region for 2022
+case
+when ethnic_desc = 'Asian' and region = 'International' and cnty_desc1 = 'San Joaquin' and year = '2022' then 'Local Market'
+when ethnic_desc = 'Asian' and region = 'International' and cnty_desc1 = 'Santa Clara' and year = '2022' then 'Northern CA'
+when ethnic_desc = 'Asian' and region = 'International' and cnty_desc1 is null and year = '2022' then NULL
+else region END AS REGN
+*/
+
+WITH GEND AS (select id,
+                      season + ' ' + year AS term,
+                      ft_pt,
+                      styp_code,
+                      level,
+                      levl_code,
+                      degc_code,
+                      clas_code,
+                      gender,
+                      ethnic_code,
+                      ethn_code,
+                      case gender when 'F' then count(ID) else 0 END AS Fem
+
+               from enr
+               where report = '1'
+                 and season = 'fall'
+                 and year = '2024'
+               group by id, TERM_CODE_KEY, ft_pt, styp_code, level, levl_code, degc_code, clas_code, gender, ethnic_code, ethn_code, gender, season, year )
+
+select term,
+       count(id) AS Students,
+       sum(FEM) as FEM,
+       format((cast(sum(FEM) as decimal))/(cast(Count(id) as decimal)) *100, '0.#') AS FEM_PERC
+    FROM GEND WITH (NOLOCK)
+    where STYP_CODE = 'n'
+    group by term;
 
 
---update Fall 2022 region and ethnic_desc, there are 4 students with ethnic_desc = 'Asian' and region = 'International'
-update #temp1 set region = 'Local Market' where ethnic_desc = 'Asian' and region = 'International' and cnty_desc1 = 'San Joaquin' and year = '2022'
-update #temp1 set region = 'Northern CA' where ethnic_desc = 'Asian' and region = 'International' and cnty_desc1 = 'Santa Clara' and year = '2022'
-update #temp1 set region = 'NULL' where ethnic_desc = 'Asian' and region = 'International' and cnty_desc1 is null and year = '2022'
+WITH CLEANDATA AS (select distinct id,
+                             season + ' ' + year AS term,
+                             season,
+                             year,
+                             case --- manually update the incorrectly coded students here
+                                 when ethnic_desc = 'Asian' and region = 'International' and
+                                      cnty_desc1 = 'San Joaquin' and year = '2022' then 'Local Market'
+                                 when ethnic_desc = 'Asian' and region = 'International' and
+                                      cnty_desc1 = 'Santa Clara' and year = '2022' then 'Northern CA'
+                                 when ethnic_desc = 'Asian' and region = 'International' and cnty_desc1 is null and
+                                      year = '2022' then 'Missing'
+                                 else region END AS REGN,
+                             cnty_desc1,
+                             ethnic_desc,
+                             discipline
+             from ENR WITH (NOLOCK)
+             where report = '1'
+               and season = 'fall'
+               and year >= '2013'
+               and levl_code = 'ug'
+               and styp_code = 'n')
 
-alter table #temp1 add
-	out_of_state int,
-	excluding_international varchar (1)
-go
+, OOS AS (
+                 select id,
+                     term,
+                     season,
+                     year,
+                     regn,
+                     cnty_desc1,
+                     ethnic_desc,
+                     discipline,
+                     case
+                         when REGN not in ('Local Market', 'Northern CA', 'Southern CA', 'International', 'Missing') and
+                              REGN is not null then 1
+                         else 0 END AS OutOfState,
+                     case
+                         when REGN not in ('International') then 1
+                         else 0 END as ExclInt
+              from CLEANDATA WITH (NOLOCK)
+              )
 
-update #temp1 set out_of_state = 0
-update #temp1 set out_of_state = 1 where region not in ('Local Market', 'Northern CA', 'Southern CA', 'International', 'Missing') and region is not null
-go
-
-update #temp1 set excluding_international = 0
-update #temp1 set excluding_international = 1 where region not in ('International')
-go
-
--- Show out of state, cohort, and the percentage needed by dicipline
-
-with percentage_by_discipline AS(
-select term, DISCIPLINE, sum(out_of_state) OutOfState, count(distinct id) Cohort
-from #temp1 WITH (NOLOCK)
-WHERE season = 'fall' and year >= '2013'
-and region not in ('International')
-GROUP BY term, DISCIPLINE 
-	)
-
-	select term, DISCIPLINE, OutOfState, Cohort, format((cast(OutOfState AS decimal)/ NULLIF(cast(Cohort as decimal),0)) *100, '0.#') AS perc
-	FROM percentage_by_discipline WITH (NOLOCK)
-	WHERE term like '%20XX'
-	GROUP BY term, DISCIPLINE, OutOfState, Cohort
-	ORDER BY 
-		case DISCIPLINE 
-			when 'COP - Humanities' then 1 
-			when 'COP - Natural Sciences' then 2 
+SELECT DISCIPLINE,
+       format((cast(sum(OutOfState) as decimal))/(cast(count(id) as decimal)) * 100, '0.#') AS PERC,
+       sum(OutOfState) as OutOfSt, count (ID) AS Cohort
+    from OOS WITH (NOLOCK)
+where ExclInt = 1
+and term like '%2024'
+GROUP BY DISCIPLINE
+order by
+ case DISCIPLINE
+            when 'COP - Humanities' then 1
+			when 'COP - Natural Sciences' then 2
 			when 'COP - Social Sciences' then 3
 			when 'COP - Exploratory'then 4
 			when 'ESB' then 5
@@ -56,23 +112,3 @@ GROUP BY term, DISCIPLINE
 			when 'UW'then 13
 			when 'UNC' then 14
 	END;
-
-
--- Show out of state, cohort, and the percentage needed for whole year
-
-with percentage_total AS(
-select term, sum(out_of_state) OutOfState, count(distinct id) Cohort
-from #temp1 WITH (NOLOCK)
-WHERE season = 'fall' and year >= '20XX'
-and region not in ('International')
-GROUP BY term
-	)
-
-	select term, format((cast(OutOfState AS decimal)/ NULLIF(cast(Cohort as decimal),0)) *100, '0.#') AS perc
-	FROM percentage_total WITH (NOLOCK)
-	ORDER BY term
-
-select *
-FROM #temp1
-
-drop table #temp1
