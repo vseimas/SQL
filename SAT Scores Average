@@ -3,7 +3,7 @@ SELECT
     a.ID,
     a.season + ' ' + a.year AS term,
     a.DISCIPLINE,
-    case when b.IRSM is NULL then NULL else b.IRSV END AS IRSV,
+    case when b.IRSM is NULL then NULL else b.IRSV END AS IRSV, --- setting the scores so both are present or both NULL
     case when b.IRSV is NULL then NULL else b.IRSM END as IRSM
 FROM
     ENR a WITH (NOLOCK)
@@ -35,7 +35,7 @@ SELECT
     a.ID,
     a.season + ' ' + a.year AS term,
     a.DISCIPLINE,
-    case when b.IRSM is NULL then NULL else b.IRSV END AS IRSV,
+    case when b.IRSM is NULL then NULL else b.IRSV END AS IRSV, --- setting the scores so both are present or both NULL
     case when b.IRSV is NULL then NULL else b.IRSM END as IRSM
 FROM
     ENR a WITH (NOLOCK)
