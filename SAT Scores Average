@@ -1,0 +1,78 @@
+WITH CHRTS AS (
+SELECT
+    a.ID,
+    a.season + ' ' + a.year AS term,
+    a.DISCIPLINE,
+    case when b.IRSM is NULL then NULL else b.IRSV END AS IRSV,
+    case when b.IRSV is NULL then NULL else b.IRSM END as IRSM
+FROM
+    ENR a WITH (NOLOCK)
+LEFT JOIN
+    ADM b ON a.pidm_key = b.pidm_key AND a.term_code_key = b.term_code_key
+WHERE
+    report = '1'
+    AND a.styp_code = 'n'
+    AND a.year >= '2013'
+    AND a.season = 'Fall'
+    AND (a.UOPI_status in ('not UOPI','integrated accelerator') or a.UOPI_Status is null)
+ )
+
+, COMPS AS (
+    SELECT Id, term, DISCIPLINE, IRSV, IRSM,
+        cast(IRSM as decimal)+cast(IRSV as decimal) AS SATT
+    FROM CHRTS WITH (NOLOCK)
+    )
+
+ select term, format(round(avg(SATT),0),'0') As SAT, count(id) AS Student_Count
+     FROM COMPS WITH (NOLOCK)
+group by term
+order by term desc
+;
+
+
+WITH CHRTS AS (
+SELECT
+    a.ID,
+    a.season + ' ' + a.year AS term,
+    a.DISCIPLINE,
+    case when b.IRSM is NULL then NULL else b.IRSV END AS IRSV,
+    case when b.IRSV is NULL then NULL else b.IRSM END as IRSM
+FROM
+    ENR a WITH (NOLOCK)
+LEFT JOIN
+    ADM b ON a.pidm_key = b.pidm_key AND a.term_code_key = b.term_code_key
+WHERE
+    report = '1'
+    AND a.styp_code = 'n'
+    AND a.year >= '2013'
+    AND a.season = 'Fall'
+    AND (a.UOPI_status in ('not UOPI','integrated accelerator') or a.UOPI_Status is null)
+ )
+
+, COMPS AS (
+    SELECT Id, term, DISCIPLINE, IRSV, IRSM,
+        cast(IRSM as decimal)+cast(IRSV as decimal) AS SATT
+    FROM CHRTS WITH (NOLOCK)
+    )
+
+ select DISCIPLINE, format(round(avg(SATT),0),'0') As SAT, count(id) AS Student_Count
+     FROM COMPS WITH (NOLOCK)
+     where term like '%2024'
+group by DISCIPLINE
+order by
+    case DISCIPLINE
+            when 'COP - Humanities' then 1
+			when 'COP - Natural Sciences' then 2
+			when 'COP - Social Sciences' then 3
+			when 'COP - Exploratory'then 4
+			when 'ESB' then 5
+			when 'BC' then 6
+			when 'SOECS' then 7
+			when 'COM'then 8
+			when 'SHS' then 9
+			when 'SOP'then 10
+			when 'DEN' then 11
+			when 'LAW'then 12
+			when 'UW'then 13
+			when 'UNC' then 14
+	END;
