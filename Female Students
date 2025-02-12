@@ -1,0 +1,71 @@
+WITH GEND AS (select id,
+                      season + ' ' + year AS term,
+                      ft_pt,
+                      styp_code,
+                      level,
+                      levl_code,
+                      degc_code,
+                      clas_code,
+                      gender,
+                      ethnic_code,
+                      ethn_code,
+                      case gender when 'F' then count(ID) else 0 END AS Fem
+
+               from enr
+               where report = '1'
+                 and season = 'fall'
+                 and year = '2024'
+               group by id, TERM_CODE_KEY, ft_pt, styp_code, level, levl_code, degc_code, clas_code, gender, ethnic_code, ethn_code, gender, season, year )
+
+select term,
+       count(id) AS Students,
+       sum(FEM) as FEM,
+       format((cast(sum(FEM) as decimal))/(cast(Count(id) as decimal)) *100, '0.#') AS FEM_PERC
+    FROM GEND WITH (NOLOCK)
+    where STYP_CODE = 'n'
+    group by term;
+
+WITH GEND AS (select id,
+                      season + ' ' + year AS term,
+                      ft_pt,
+                      styp_code,
+                      DISCIPLINE,
+                      level,
+                      levl_code,
+                      degc_code,
+                      clas_code,
+                      gender,
+                      ethnic_code,
+                      ethn_code,
+                      case gender when 'F' then count(ID) else 0 END AS Fem
+
+               from enr
+               where report = '1'
+                 and season = 'fall'
+                 and year = '2024'
+               group by id, TERM_CODE_KEY, ft_pt, styp_code, DISCIPLINE, level, levl_code, degc_code, clas_code, gender, ethnic_code, ethn_code, gender, season, year )
+
+select term, DISCIPLINE,
+       format((cast(sum(FEM) as decimal))/(cast(Count(id) as decimal)) *100, '0.#') AS FEM_PERC,
+       count(id) AS Students,
+       sum(FEM) as FEM
+    FROM GEND WITH (NOLOCK)
+    where STYP_CODE = 'n'
+    group by term, DISCIPLINE
+    order by
+        case DISCIPLINE
+            when 'COP - Humanities' then 1
+			when 'COP - Natural Sciences' then 2
+			when 'COP - Social Sciences' then 3
+			when 'COP - Exploratory'then 4
+			when 'ESB' then 5
+			when 'BC' then 6
+			when 'SOECS' then 7
+			when 'COM'then 8
+			when 'SHS' then 9
+			when 'SOP'then 10
+			when 'DEN' then 11
+			when 'LAW'then 12
+			when 'UW'then 13
+			when 'UNC' then 14
+	END;
