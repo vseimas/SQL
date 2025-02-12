@@ -1,0 +1,63 @@
+WITH CHRTS AS (
+SELECT
+    a.ID,
+    a.season + ' ' + a.year AS term,
+    cast(b.HIGH_SCHOOL_REPORTED_GPA as decimal (10,2)) AS HS_GPA
+FROM
+    ENR a WITH (NOLOCK)
+LEFT JOIN
+    ADM b ON a.pidm_key = b.pidm_key AND a.term_code_key = b.term_code_key
+WHERE
+    report = '1'
+    AND a.styp_code = 'n'
+    AND a.year >= '2014'
+    AND a.season = 'Fall'
+    AND a.uopi_status IN ('not uopi', 'integrated accelerator')
+ )
+
+ select term, format(avg(HS_GPA), '0.##') As Avg_GPA, count(id) AS Student_Count
+     FROM CHRTS WITH (NOLOCK)
+group by term
+order by term DESC
+;
+
+
+
+WITH CHRTS AS (
+SELECT
+    a.ID,
+    a.season + ' ' + a.year AS term,
+    a.DISCIPLINE,
+    cast(b.HIGH_SCHOOL_REPORTED_GPA as decimal (10,2)) AS HS_GPA
+FROM
+    ENR a WITH (NOLOCK)
+LEFT JOIN
+    ADM b ON a.pidm_key = b.pidm_key AND a.term_code_key = b.term_code_key
+WHERE
+    report = '1'
+    AND a.styp_code = 'n'
+    AND a.year = '2023'
+    AND a.season = 'Fall'
+    AND a.uopi_status IN ('not uopi', 'integrated accelerator')
+ )
+
+ select term, discipline, format(avg(HS_GPA), '0.##') As Avg_GPA, count(id) AS Student_Count
+     FROM CHRTS WITH (NOLOCK)
+group by term, discipline
+order by
+    case DISCIPLINE
+            when 'COP - Humanities' then 1
+			when 'COP - Natural Sciences' then 2
+			when 'COP - Social Sciences' then 3
+			when 'COP - Exploratory'then 4
+			when 'ESB' then 5
+			when 'BC' then 6
+			when 'SOECS' then 7
+			when 'COM'then 8
+			when 'SHS' then 9
+			when 'SOP'then 10
+			when 'DEN' then 11
+			when 'LAW'then 12
+			when 'UW'then 13
+			when 'UNC' then 14
+            END;
