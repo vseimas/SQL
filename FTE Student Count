@@ -1,0 +1,18 @@
+WITH STCUNT AS (select count(id) as HC, FT_PT, LEVEL, Year
+from ENR WITH (NOLOCK)
+where report = 1
+ --- and Year = '2019'
+  and season = 'fall'
+group by FT_PT, LEVEL, Year)
+
+, AGRCNT AS (
+select year,
+    cast(sum(HC) as decimal) AS HC,
+    cast(sum (case when ft_pt = 'FT' then HC END) as decimal) AS FT_HC,
+    cast(sum (case when ft_pt = 'PT' then HC END) as decimal) AS PT_HC
+    from STCUNT WITH (NOLOCK)
+     group by year)
+
+select year, HC, FT_HC, PT_HC, format(FT_HC + (PT_HC/3), '0') AS CRD_HR_CRT
+    from AGRCNT WITH (NOLOCK)
+order by year DESC
