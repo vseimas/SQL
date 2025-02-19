@@ -39,12 +39,11 @@ WITH CHRT AS (select a.pidm_key, a.id, a.TERM_CODE_KEY, cast(b.IRSV as decimal) 
                 ) )
                ELSE Null END AS ACT_MATH
 from enr a WITH (NOLOCK)
-    left join adm b on a.id = b.id
+    left join adm b on a.id = b.id and a.TERM_CODE_KEY = b.TERM_CODE_KEY
 where report = '1'
 and a.season = 'fall' and a.year = '2024'
 and a.styp_code = 'n'
-and a.UOPI_status in ('not UOPI','integrated accelerator')
-and b.season = 'fall' and b.year = '2024'
+and (a.UOPI_status in ('not UOPI','integrated accelerator') or a.UOPI_Status is null)
  )
 
    ,CHRTCNT AS (select count(a.pidm_key) as Cohort
