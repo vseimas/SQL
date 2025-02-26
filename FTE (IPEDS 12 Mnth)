@@ -1,0 +1,40 @@
+WITH TwYr as (
+SELECT LEVEL, TERM_CODE_KEY, SUM(SECTION_CREDIT_HOURS) as UNTS
+FROM reg
+WHERE TERM_CODE_KEY IN ('202334', '202352', '202353', '202361', '202371', '202381', '202383',
+                        '202384', '202424', '202431', '202432', '202433',  '202451') --12 month period begins with Summer 3 because it is the first term that does not include days prior to July 1
+AND REPORT = 1
+GROUP BY LEVEL, TERM_CODE_KEY, CAMP_CODE, COURSE_NUMBER
+---ORDER BY TERM_CODE_KEY, LEVEL, CAMP_CODE, COURSE_NUMBER
+)
+
+, DENT As (SELECT LEVEL, TERM_CODE_KEY,  SUM(SECTION_CREDIT_HOURS) as DENTUNR
+FROM reg
+WHERE TERM_CODE_KEY IN ('202352', '202432')
+AND REPORT = 1
+AND CAMP_CODE IN ('2')
+AND SUBSTRING(COURSE_NUMBER, 3, 1) > '6'
+GROUP BY LEVEL, TERM_CODE_KEY)
+
+, AGR AS (
+select t.LEVEL, t.TERM_CODE_KEY, sum(t.UNTS) as UNTS, d.DENTUNR, sum(t.UNTS)-isnull(d.DENTUNR,0) as Un4FTE
+               from TwYr t WITH (NOLOCK) 
+                left outer join DENT d on t.LEVEL = d.LEVEL and t.TERM_CODE_KEY = d.TERM_CODE_KEY
+               group by t.LEVEL, t.TERM_CODE_KEY,  d.DENTUNR
+                ---order by t.LEVEL, t.TERM_CODE_KEY
+    )
+
+,Total As (
+    select Level, TERM_CODE_KEY, Un4FTE,
+           case when level = 'ug' then Un4FTE/30  --- calculate UG FTE with 30 units
+               when level = 'gr' then Un4FTE/24 --- calculate GR FTE with 30 units
+               when level = 'pr' and TERM_CODE_KEY like ('%4') then Un4FTE/36 --- calculate PHS FTE with 36 units
+               when level = 'pr' then Un4FTE/24 --- calculate Other PR FTE with 30 units
+               END as FTEs
+        from AGR WITH (NOLOCK) 
+        group by Level, TERM_CODE_KEY, Un4FTE
+        ---order by LEVEL, TERM_CODE_KEY asc
+                 )
+
+select sum(FTEs) as FTE, format(sum(FTEs),'0.#') As FTERound, ceiling(sum(FTEs)) As FTEWHOLE
+    from Total WITH (NOLOCK) 
