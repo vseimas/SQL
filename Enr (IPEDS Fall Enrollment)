@@ -1,0 +1,60 @@
+select pidm_key,
+       case when LEVL_CODE in ('gr','gu','pr', 'pu','lw') then 'GR'
+            when LEVL_CODE in ('ug','uu') then 'UG' END AS LEVL,
+    majr_desc1, degc_code,
+    case when ethnic_code = 'F' then '1. U.S. Nonresident'
+            when ethnic_code = 'H' then '2. Hispanic/Latino'
+            when ethnic_code = 'N' then '3. American Indian or Alaska Native'
+            when ethnic_code in ('A','S') then  '4. Asian'
+            when ethnic_code = 'B' then '5. Black or African American'
+            when ethnic_code = 'P' or (ethn_code = 'P' and ethnic_code in ('A','S')) then '6. Native Hawaiian or Other Pacific Islander'
+            when ethnic_code = 'W' then '7. White'
+            when ethnic_code = 'M' then '8. Two or more races'
+            when ethnic_code = 'U' or ethnic_code is null then '9. Race and ethnicity unknown' END AS Ethnicity,
+    gender, ft_pt, styp_code,
+        case when styp_code = 'n' and levl_code in ('ug','uu') then 'First-Time'
+            when styp_code = 't' and levl_code in ('ug','uu') then 'Transfer-in'
+            when styp_code in ('c','r','b') and levl_code in ('ug','uu') then 'Continuing/Returning'
+            when styp_code = 'x' and levl_code in ('ug','uu') then 'Non-degree/non-certificate-seeking'
+            when styp_code in ('g','p','c','y') and levl_code in ('gr','pr','gu','pu','lw') then 'Graduate'
+
+            ELSE 'Graduate' END As IPEDS_STYP, --- accounting for grad students at the T and R styp_code levels
+    age,
+        case when age < 18 then 'Under 18'
+            when age = 18 or age = 19 then '18-19'
+            when age = 20 or age = 21 then '20-21'
+            when age > 21 and age < 25 then '22-24'
+            when age > 24 and age < 30 then '25-29'
+            when age  > 29 and age < 35 then '30-34'
+            when age > 34 and age < 40 then '35-39'
+            when age > 39 and age < 50 then '40-49'
+            when age > 49 and age < 65  then '50-64'
+            when age > 64  then '65 and over'
+            else 'Age unknown/unreported' END As age_category,
+    case when s.STVMAJR_CIPC_CODE like ('13%') then '13.00'
+        when s.STVMAJR_CIPC_CODE like ('14%') then '14.00'
+        when s.STVMAJR_CIPC_CODE like ('52%') then '52.00'
+        when s.STVMAJR_CIPC_CODE like ('40%') then '40.00'
+        when s.STVMAJR_CIPC_CODE like ('27%') then '27.00'
+        when s.STVMAJR_CIPC_CODE like ('26%') then '26.00'
+        when s.STVMAJR_CIPC_CODE like ('2201%') and degc_code in ('JD', 'NDEG') then '22.01'
+        when s.STVMAJR_CIPC_CODE like ('5104%') and degc_code = 'DDS' then '51.04'
+        else 'Other' END As majr_cip_category,
+    MAJR_CODE1_CAPP,majr_code1,state1,
+    case when s.STVMAJR_CIPC_CODE in ('111003', '130401', '220201', '220207', '510001') then 1 else 0 END as Distance_ED,
+    case when s.STVMAJR_CIPC_CODE in ('111003', '130401', '220201', '220207', '510001') and
+            ((majr_desc1 in ('Government Law & Policy') and degc_code = 'MSL') or
+            (majr_desc1 in ('Water & Environmental Law') and degc_code in ('MSL','LLM')) or
+            (majr_desc1 in ('Business Law') and degc_code = 'MSL') or
+            (majr_desc1 =  'Cybersecurity' and degc_code = 'MS') or
+            (majr_desc1 =  'Health Science' and degc_code = 'DHSC') or
+            (majr_desc1 =  'Medical Science' and degc_code = 'DMSC')) then 1 else 0 END as Distance_Count
+ ---   , ethnic_code, ethn_code,  coll_code
+from enr
+left join STVMAJR s on MAJR_CODE1_CAPP = s.STVMAJR_CODE
+where report = '1'
+and season = 'fall' and year = '2023'
+and levl_code in ('gr','gu','pr', 'pu','lw', 'ug', 'uu')
+
+
+--- only thing I didn't do is recode the gender because I believe we are reporting others now
