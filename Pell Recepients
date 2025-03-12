@@ -1,0 +1,44 @@
+-- !! NOTE: Start from 2024 we will use fall census
+
+--- aggregate term numbers
+select [year],
+       sum(case when PELL = 1 then 1 END) as PELL,
+       count(distinct pidm_key) as COhort,
+       format(cast(sum(case when PELL = 1 then 1 END) as decimal)/cast(count(distinct pidm_key) as decimal) *100, '0.#') as PERC
+from archive.dbo.RETENTION_First_Year_2024_10_22_CENSUS
+group by [year]
+order by [year] desc;
+
+
+-- numbers by discipline
+select [year], DISCIPLINE,
+       sum(case when PELL = 1 then 1 END) as PELL,
+       count(distinct pidm_key) as Cohort,
+       format(cast(sum(case when PELL = 1 then 1 END) as decimal)/cast(count(distinct pidm_key) as decimal) *100, '0.#') as PERC,
+       case when count(distinct pidm_key) < 10 then 'SUPPRESS' END As SUPR
+from archive.dbo.RETENTION_First_Year_2024_10_22_CENSUS
+where [year] =2024
+-- and PELL=1
+group by [year], discipline
+ORDER BY
+    CASE
+        WHEN discipline = 'COP - Humanities' THEN 1
+        WHEN discipline = 'COP - Natural Sciences' THEN 2
+        WHEN discipline = 'COP - Social Sciences' THEN 3
+        WHEN discipline = 'COP - Exploratory' THEN 4
+        WHEN discipline = 'ESB' THEN 5
+        WHEN discipline = 'BC' THEN 6
+		WHEN discipline = 'SOECS' THEN 7
+		WHEN discipline = 'COM' THEN 8
+		WHEN discipline = 'SHS' THEN 9
+		WHEN discipline = 'SOP' THEN 10
+		WHEN discipline = 'DEN' THEN 11
+		WHEN discipline = 'LAW' THEN 12
+		WHEN discipline = 'UW' THEN 13
+		WHEN discipline = 'UNC' THEN 14
+        ELSE 15
+    END
+;
+
+
+
