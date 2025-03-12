@@ -1,0 +1,37 @@
+---- 6yr grad%
+select [year], discipline, sum(grad_6yr) as Grad6Yr, count(pidm_key) as Pell_Cohort,
+       format(cast(sum(grad_6yr) as decimal)/ cast(count(pidm_key) as decimal) * 100, '0.#') as Grad_Perc,
+       case when count(pidm_key) < 10 then 'SUPPRESS' END As SUPR
+from archive.dbo.RETENTION_First_Year_2024_10_22_CENSUS
+where grad_cohort=1
+and pell=1
+and [year] = 2018 --- this is the cohort student BEGAN, not year graduating
+group by [year], discipline
+ORDER BY
+    CASE
+        WHEN discipline = 'COP - Humanities' THEN 1
+        WHEN discipline = 'COP - Natural Sciences' THEN 2
+        WHEN discipline = 'COP - Social Sciences' THEN 3
+        WHEN discipline = 'COP - Exploratory' THEN 4
+        WHEN discipline = 'ESB' THEN 5
+        WHEN discipline = 'BC' THEN 6
+		WHEN discipline = 'SOECS' THEN 7
+		WHEN discipline = 'COM' THEN 8
+		WHEN discipline = 'SHS' THEN 9
+		WHEN discipline = 'SOP' THEN 10
+		WHEN discipline = 'DEN' THEN 11
+		WHEN discipline = 'LAW' THEN 12
+		WHEN discipline = 'UW' THEN 13
+		WHEN discipline = 'UNC' THEN 14
+        ELSE 15
+    END
+;
+
+
+select [year], sum(grad_6yr) as Grad6Yr, count(pidm_key) as Pell_Cohort,
+       format(cast(sum(grad_6yr) as decimal)/ cast(count(pidm_key) as decimal) * 100, '0.#') as Grad_Perc
+from archive.dbo.RETENTION_First_Year_2024_10_22_CENSUS
+where grad_cohort=1
+and pell=1
+group by [year]
+order by [year] desc
