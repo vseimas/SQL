@@ -14,8 +14,9 @@ order by [year] desc;
 select [year], DISCIPLINE,
        sum(case when PELL = 1 then 1 END) as PELL,
        count(distinct pidm_key) as Cohort,
-       format(cast(sum(case when PELL = 1 then 1 END) as decimal)/cast(count(distinct pidm_key) as decimal) *100, '0.#') as PERC,
-       case when count(distinct pidm_key) < 10 then 'SUPPRESS' END As SUPR
+---       format(cast(sum(case when PELL = 1 then 1 END) as decimal)/cast(count(distinct pidm_key) as decimal) *100, '0.#') as PERC,
+---       case when count(distinct pidm_key) < 10 then 'SUPPRESS' END As SUPR
+	Case when count(distinct pidm_key) < 10 then 'SUPPRESS' ELSE format(cast(sum(case when PELL = 1 then 1 END) as decimal)/cast(count(distinct pidm_key) as decimal) *100, '0.#') END as PERC
 from archive.dbo.RETENTION_First_Year_2024_10_22_CENSUS
 where [year] =2024
 -- and PELL=1
