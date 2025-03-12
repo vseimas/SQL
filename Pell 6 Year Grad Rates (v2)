@@ -1,7 +1,8 @@
 ---- 6yr grad%
 select [year], discipline, sum(grad_6yr) as Grad6Yr, count(pidm_key) as Pell_Cohort,
-       format(cast(sum(grad_6yr) as decimal)/ cast(count(pidm_key) as decimal) * 100, '0.#') as Grad_Perc,
-       case when count(pidm_key) < 10 then 'SUPPRESS' END As SUPR
+ ---      format(cast(sum(grad_6yr) as decimal)/ cast(count(pidm_key) as decimal) * 100, '0.#') as Grad_Perc,
+ ---      case when count(pidm_key) < 10 then 'SUPPRESS' END As SUPR,
+       case when count(pidm_key) < 10 then 'SUPPRESS' ELSE format(cast(sum(grad_6yr) as decimal)/ cast(count(pidm_key) as decimal) * 100, '0.#') END AS Perc
 from archive.dbo.RETENTION_First_Year_2024_10_22_CENSUS
 where grad_cohort=1
 and pell=1
