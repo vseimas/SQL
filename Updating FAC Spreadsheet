@@ -1,0 +1,215 @@
+--- FTFAC by Rank
+
+select
+    case COLL_CODE
+        when 'DT' then '7. DEN'
+        when 'BC' then '3. BC'
+        when 'AS' then '1. COP'
+        when 'MU' then '5. COM'
+        when 'BU' then '2. ESB'
+        when 'LW' then '8. LAW'
+        when 'Z5' then '9. OTHER'
+        when 'EG' then '4. SOECS'
+        when 'HS' then '5. SHS'
+        when 'PH' then '6. SOP'
+        when 'SP' then '6. SOP'
+        when 'LI' then '9. OTHER'
+        ELSE 'MISSING' END as College,
+    count(case when FSTP_CODE in ('CPRO', 'PROF', 'APRO', 'VPRO') then id END) as 'Professor',
+    count( case when FSTP_CODE in ('CASO', 'ASSO', 'AASO', 'VASO') then id END) as 'Associate',
+    count( case when FSTP_CODE in ('CAST', 'ASST', 'AAST', 'VAST') then id END) as 'Assistant',
+    count( case when FSTP_CODE in ('CINS', 'AINS', 'VINS', 'INST') then id END) as 'Instructor',
+    count(case when FSTP_CODE in ('ALEC', 'CLEC', 'LECT', 'VLEC') then id END) as 'Lecturer',
+   count( case when FSTP_CODE in ('SCHL', 'VSCH') then id END ) as 'No Rank',
+ ---   count( case when FSTP_CODE not in ('CPRO', 'PROF', 'APRO', 'VPRO', 'CASO', 'ASSO', 'AASO', 'VASO', 'CAST', 'ASST', 'AAST', 'VAST',
+ ---                                     'CINS', 'AINS', 'VINS', 'INST', 'ALEC', 'CLEC', 'LECT', 'VLEC', 'SCHL', 'VSCH' ) then id END) as 'MISSING',
+    count(id) as Count
+from FAC
+where report = 1
+and year = 2024
+and FCTG_CODE = 'ftfac'
+and PRIMARY_ACTIVITY = 'I'
+group by case COLL_CODE
+        when 'DT' then '7. DEN'
+        when 'BC' then '3. BC'
+        when 'AS' then '1. COP'
+        when 'MU' then '5. COM'
+        when 'BU' then '2. ESB'
+        when 'LW' then '8. LAW'
+        when 'Z5' then '9. OTHER'
+        when 'EG' then '4. SOECS'
+        when 'HS' then '5. SHS'
+        when 'PH' then '6. SOP'
+        when 'SP' then '6. SOP'
+        when 'LI' then '9. OTHER'
+        ELSE 'MISSING' END
+
+--- FTFAC by Tenure
+select
+    case COLL_CODE
+        when 'DT' then '7. DEN'
+        when 'BC' then '3. BC'
+        when 'AS' then '1. COP'
+        when 'MU' then '5. COM'
+        when 'BU' then '2. ESB'
+        when 'LW' then '8. LAW'
+        when 'Z5' then '9. OTHER'
+        when 'EG' then '4. SOECS'
+        when 'HS' then '5. SHS'
+        when 'PH' then '6. SOP'
+        when 'SP' then '6. SOP'
+        when 'LI' then '9. OTHER'
+        ELSE 'MISSING' END as College,
+    count(case when TENR_CODE = 'T' then id END) as 'Tenured',
+    count (case when TENR_CODE = 'O' then id END) as 'On Tenure Track',
+    count (case when TENR_CODE not in ('T', 'O') then id END) as 'Not Tenure Track',
+    count(id) as Count
+from FAC
+where report = 1
+and year = 2024
+and FCTG_CODE = 'ftfac'
+and PRIMARY_ACTIVITY = 'I'
+group by case COLL_CODE
+        when 'DT' then '7. DEN'
+        when 'BC' then '3. BC'
+        when 'AS' then '1. COP'
+        when 'MU' then '5. COM'
+        when 'BU' then '2. ESB'
+        when 'LW' then '8. LAW'
+        when 'Z5' then '9. OTHER'
+        when 'EG' then '4. SOECS'
+        when 'HS' then '5. SHS'
+        when 'PH' then '6. SOP'
+        when 'SP' then '6. SOP'
+        when 'LI' then '9. OTHER'
+        ELSE 'MISSING' END
+
+--- FTFAC by Age Group
+WITH STFFCNT AS ( select id,
+                        CASE
+                           WHEN DATEADD(YEAR, DATEDIFF(YEAR, BIRTH_DATE, '2024-11-01'), BIRTH_DATE) > '2024-11-01'
+                               THEN DATEDIFF(YEAR, BIRTH_DATE, '2024-11-01') - 1
+                           ELSE DATEDIFF(YEAR, BIRTH_DATE, '2024-11-01')
+                           END                       AS AGE,
+    case COLL_CODE
+        when 'DT' then '7. DEN'
+        when 'BC' then '3. BC'
+        when 'AS' then '1. COP'
+        when 'MU' then '5. COM'
+        when 'BU' then '2. ESB'
+        when 'LW' then '8. LAW'
+        when 'Z5' then '9. OTHER'
+        when 'EG' then '4. SOECS'
+        when 'HS' then '5. SHS'
+        when 'PH' then '6. SOP'
+        when 'SP' then '6. SOP'
+        when 'LI' then '9. OTHER'
+        ELSE 'MISSING' END as College
+
+from FAC
+where report = 1
+and year = 2024
+and FCTG_CODE = 'ftfac'
+and PRIMARY_ACTIVITY = 'I'
+)
+
+select College,
+       count( case when AGE < 30 then id END) as '< 30',
+       count( case when AGE < 40 and AGE >= 30  then id END) as '30-39',
+       count( case when AGE < 50 and AGE >= 40  then id END) as '40-49',
+       count( case when AGE < 60 and AGE >= 50  then id END) as '50-59',
+       count( case when AGE >= 60  then id END) as '60+',
+       count( case when AGE is Null then id END) as 'Not Reported',
+       count(id) as 'Total'
+
+    from STFFCNT
+
+group by College
+
+--- FTFAC by Gender
+select
+    case COLL_CODE
+        when 'DT' then '7. DEN'
+        when 'BC' then '3. BC'
+        when 'AS' then '1. COP'
+        when 'MU' then '5. COM'
+        when 'BU' then '2. ESB'
+        when 'LW' then '8. LAW'
+        when 'Z5' then '9. OTHER'
+        when 'EG' then '4. SOECS'
+        when 'HS' then '5. SHS'
+        when 'PH' then '6. SOP'
+        when 'SP' then '6. SOP'
+        when 'LI' then '9. OTHER'
+        ELSE 'MISSING' END as College,
+    count(case when GENDER = 'F' then id END) as 'Female',
+    count (case when GENDER = 'M' then id END) as 'Male',
+    count (case when GENDER = 'N' then id END) as 'Other/NotReported',
+    count(id) as Count
+from FAC
+where report = 1
+and year = 2024
+and FCTG_CODE = 'ftfac'
+and PRIMARY_ACTIVITY = 'I'
+group by     case COLL_CODE
+        when 'DT' then '7. DEN'
+        when 'BC' then '3. BC'
+        when 'AS' then '1. COP'
+        when 'MU' then '5. COM'
+        when 'BU' then '2. ESB'
+        when 'LW' then '8. LAW'
+        when 'Z5' then '9. OTHER'
+        when 'EG' then '4. SOECS'
+        when 'HS' then '5. SHS'
+        when 'PH' then '6. SOP'
+        when 'SP' then '6. SOP'
+        when 'LI' then '9. OTHER'
+        ELSE 'MISSING' END
+
+--- FTFAC by race/ethnicity
+select
+    case COLL_CODE
+        when 'DT' then '7. DEN'
+        when 'BC' then '3. BC'
+        when 'AS' then '1. COP'
+        when 'MU' then '5. COM'
+        when 'BU' then '2. ESB'
+        when 'LW' then '8. LAW'
+        when 'Z5' then '9. OTHER'
+        when 'EG' then '4. SOECS'
+        when 'HS' then '5. SHS'
+        when 'PH' then '6. SOP'
+        when 'SP' then '6. SOP'
+        when 'LI' then '9. OTHER'
+        ELSE 'MISSING' END as College,
+    count(case when ETHNIC_CODE = 'F' then id END) as 'Int',---'International',
+    count(case when ETHNIC_CODE = 'B' then id END) as 'Black/AA',---'Black or African American',
+    count(case when ETHNIC_CODE = 'N' then id END) as 'Ai/AN',---'American Indian or Alaska Native',
+    count(case when ETHNIC_CODE in ( 'A', 'S') then id END) as 'Asian',
+    count(case when ETHNIC_CODE = 'P' then id END) as 'Islander',---'Native Hawaiian or Other Pacific Islander',
+    count(case when ETHNIC_CODE = 'H' then id END) as 'Hispanic',
+    count(case when ETHNIC_CODE = 'W' then id END) as 'White',
+    count(case when ETHNIC_CODE = 'M' then id END) as 'Two+',---'Two or More Races',
+    count(case when ETHNIC_CODE is null or ETHNIC_CODE = 'U' then id END) as 'Unknown',
+ ---   count(case when ethnic_code not in ('F', 'B', 'N', 'A', 'P', 'H', 'W', 'M', 'U') then id END) as 'Other',
+    count(id) as Total
+from FAC
+where report = 1
+and year = 2024
+and FCTG_CODE = 'ftfac'
+and PRIMARY_ACTIVITY = 'I'
+group by     case COLL_CODE
+        when 'DT' then '7. DEN'
+        when 'BC' then '3. BC'
+        when 'AS' then '1. COP'
+        when 'MU' then '5. COM'
+        when 'BU' then '2. ESB'
+        when 'LW' then '8. LAW'
+        when 'Z5' then '9. OTHER'
+        when 'EG' then '4. SOECS'
+        when 'HS' then '5. SHS'
+        when 'PH' then '6. SOP'
+        when 'SP' then '6. SOP'
+        when 'LI' then '9. OTHER'
+        ELSE 'MISSING' END
+
