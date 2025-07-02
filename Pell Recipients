@@ -36,8 +36,9 @@ ORDER BY
 		WHEN discipline = 'DEN' THEN 11
 		WHEN discipline = 'LAW' THEN 12
 		WHEN discipline = 'UW' THEN 13
-		WHEN discipline = 'UNC' THEN 14
-        ELSE 15
+		WHEN discipline = 'LIB' THEN 14
+		WHEN discipline = 'UNC' THEN 15
+        ELSE 16
     END
 ;
 
@@ -80,8 +81,9 @@ ORDER BY
 		WHEN discipline = 'DEN' THEN 11
 		WHEN discipline = 'LAW' THEN 12
 		WHEN discipline = 'UW' THEN 13
-		WHEN discipline = 'UNC' THEN 14
-        ELSE 15
+		WHEN discipline = 'LIB' THEN 14
+		WHEN discipline = 'UNC' THEN 15
+        ELSE 16
     END
 
 
