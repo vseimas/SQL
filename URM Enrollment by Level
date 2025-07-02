@@ -155,11 +155,11 @@ format((NULLIF(cast(Enr_URM AS decimal),0)/ NULLIF(cast(Enr as decimal),0)) *100
 from PERCS  WITH (NOLOCK)
 
 order by term ASC,
-case DISCIPLINE 
-	when 'COP - Humanities' then 1 
-	when 'COP - Natural Sciences' then 2 
+case DISCIPLINE
+	when 'COP - Humanities' then 1
+	when 'COP - Natural Sciences' then 2
 	when 'COP - Social Sciences' then 3
-	when 'COP - Exploratory'then 4
+	when 'COP - Exploratory' then 4
 	when 'ESB' then 5
 	when 'BC' then 6
 	when 'SOECS' then 7
@@ -168,6 +168,7 @@ case DISCIPLINE
 	when 'SOP'then 10
 	when 'DEN' then 11
 	when 'LAW'then 12
-	when 'UW'then 13
-	when 'UNC' then 14
+	when 'UW 'then 13
+	when 'LIB' then 14
+	when 'UNC' then 15
 	END
