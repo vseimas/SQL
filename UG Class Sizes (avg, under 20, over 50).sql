@@ -163,5 +163,6 @@ case DISC
 	when 'LAW'then 13
 	when 'UW'then 14
 	when 'CORE/PACS/Other' then 15
-	when 'UNC' then 16
+	when 'LIB' then 16
+	when 'UNC' then 17
 	END;
