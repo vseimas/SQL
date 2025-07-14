@@ -1,0 +1,17 @@
+WITH REC_POP As (
+select id, LAST_NAME, FIRST_NAME, COLL_CODE, COLL_DESC, TERM_CODE_KEY,
+ROW_NUMBER () OVER (PARTITION BY id ORDER BY TERM_CODE_KEY DESC) AS ROWNUMBER
+from ENR
+where id in 
+(' LIST OF ALL IDS IN POPULATION')
+)
+
+select id, LAST_NAME, FIRST_NAME, COLL_CODE, COLL_DESC
+from REC_POP
+where ROWNUMBER = 1
+
+--- uses the windows functions to FIRST, add a count of all of the records
+  --- sorts by descending so that the most recent record is assigned a 1
+  --- partition by says what is counted segregated (id so person) and then order by (how you're determing what receives a 1, 2, etc.)
+
+--- add record numbers in a CTE then do a filter/calculate by that number afterwards - equals 1 means only show me the most recent for everyone - nicer way than using max like originally attempted
